@@ -2,7 +2,6 @@ package utils
 
 import (
 	"mining-monitoring/config"
-	"mining-monitoring/form"
 	"mining-monitoring/log"
 	"crypto/rand"
 	"fmt"
@@ -38,7 +37,7 @@ func SendSmsCode(phoneNum string, code string, optionType int) error {
 	}
 	// todo 短信模板从配置文件读取?
 	request := dysmsapi.CreateSendSmsRequest()
-	if optionType == form.RegisterSmsCode { // 注册
+	if optionType == 0 { // 注册
 		request.TemplateCode = config.RegisterSmsTemplate
 	}
 	request.Scheme = "https"
