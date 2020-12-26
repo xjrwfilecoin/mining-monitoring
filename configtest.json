@@ -1,0 +1,7 @@
+{
+  "LogPath": "./log/",
+  "HTTPListen": "0.0.0.0:7070",
+  "Debug": true,
+  "DevMongodbUrl": "mongodb://pynxtest:xjrw2020@118.24.168.230:27026/pynxtest?authSource=pynxtest",
+  "MongodbUrl": "mongodb://pynxtest:xjrw2020@118.24.168.230:27026/pynxtest?authSource=pynxtest"
+}
