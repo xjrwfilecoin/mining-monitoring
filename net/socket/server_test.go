@@ -60,7 +60,7 @@ func TestServer01(t *testing.T){
 	}()
 
 	http.Handle("/socket.io/", server.server)
-	log.Fatal(http.ListenAndServe("0.0.0.0:8899", nil))
+	log.Fatal(http.ListenAndServe("0.0.0.0:7070", nil))
 }
 
 
@@ -70,22 +70,24 @@ func TestServer(t *testing.T){
 	server, _ := socketio.NewServer(nil)
 
 	server.OnConnect("/", func(s socketio.Conn) error {
+		s.SetContext("")
 		fmt.Println("connected:", s.ID())
-
+		s.Emit("message","ddd")
 		return nil
 	})
 
-	server.OnEvent("/", "notice", func(s socketio.Conn, msg string) {
+	server.OnEvent("/", "message", func(s socketio.Conn, msg string) {
 		fmt.Println("notice:", msg)
 		s.Emit("reply", "have "+msg)
 	})
 
-	server.OnEvent("/chat", "msg", func(s socketio.Conn, msg string) string {
+	server.OnEvent("/chat", "message", func(s socketio.Conn, msg string) string {
 		s.SetContext(msg)
+		fmt.Printf("ddddd")
 		return "recv " + msg
 	})
 
-	server.OnEvent("/", "bye", func(s socketio.Conn) string {
+	server.OnEvent("/", "message", func(s socketio.Conn) string {
 		last := s.Context().(string)
 		s.Emit("bye", last)
 		s.Close()
@@ -104,7 +106,7 @@ func TestServer(t *testing.T){
 	defer server.Close()
 
 	http.Handle("/socket.io/", server)
-
-	log.Println("Serving at localhost:8899...")
-	log.Fatal(http.ListenAndServe("0.0.0.0:8899", nil))
+	http.Handle("/", http.FileServer(http.Dir("./asset")))
+	log.Println("Serving at localhost:8000...")
+	log.Fatal(http.ListenAndServe(":9090", nil))
 }

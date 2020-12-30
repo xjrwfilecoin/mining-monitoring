@@ -1,68 +1,46 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/googollee/go-socket.io/engineio/base"
-	"github.com/gorilla/websocket"
+	"bufio"
+	"github.com/zhouhui8915/go-socket.io-client"
 	"log"
-	"net/url"
-	"time"
+	"os"
 )
 
-var addr = flag.String("addr", "0.0.0.0:8899", "http service address")
-
-type packet struct {
-	Type         string
-	NSP          string
-	Id           int
-	Data         interface{}
-	attachNumber int
-}
-
 func main() {
-	log.SetFlags(0)
-	u := url.URL{Scheme: "ws", Host: *addr, Path: `/socket.io/`}
-	query := u.Query()
-	query.Set("transport", "websocket")
-	query.Set("t", base.Timestamp())
-	u.RawQuery = query.Encode()
-	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+
+	opts := &socketio_client.Options{
+		Transport: "websocket",
+		Query:     make(map[string]string),
+	}
+	opts.Query["user"] = "user"
+	opts.Query["pwd"] = "pass"
+	uri := "http://127.0.0.1:9090/socket.io/"
+
+	client, err := socketio_client.NewClient(uri, opts)
 	if err != nil {
-		log.Fatal("dial:", err)
+		log.Printf("NewClient error:%v\n", err)
+		return
 	}
-	done := make(chan struct{})
-	defer c.Close()
-	go func() {
-		for {
-			select {
-			default:
-				_, message, err := c.ReadMessage()
-				if err != nil {
-					log.Println("read:", err)
-					return
-				}
-				log.Printf("recv: %s", message)
-			}
-		}
-	}()
 
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
+	client.On("error", func() {
+		log.Printf("on error\n")
+	})
+	client.On("connection", func() {
+		log.Printf("on connect\n")
+	})
+	client.On("message", func(msg string) {
+		log.Printf("on message:%v\n", msg)
+	})
+	client.On("disconnection", func() {
+		log.Printf("on disconnect\n")
+	})
+
+	reader := bufio.NewReader(os.Stdin)
 	for {
-		select {
-		case <-done:
-			return
-		case <-ticker.C:
-			src := `2/,456["message:message",123]`
-			fmt.Printf(fmt.Sprintf("%v \n", src))
-			err = c.WriteMessage(websocket.TextMessage, []byte(src))
-			if err != nil {
-				log.Println("write:", err)
-				return
-			}
-
-		}
+		data, _, _ := reader.ReadLine()
+		command := string(data)
+		client.Emit("message", command)
+		log.Printf("send message:%v\n", command)
 	}
-
 }

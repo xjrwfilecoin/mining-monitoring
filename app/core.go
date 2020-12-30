@@ -6,6 +6,7 @@ import (
 	"mining-monitoring/log"
 	"mining-monitoring/model"
 	httpsvr "mining-monitoring/net/http"
+	"mining-monitoring/net/socket"
 	"mining-monitoring/processmanager"
 	"os"
 	"os/signal"
@@ -14,7 +15,7 @@ import (
 
 func Run(path string) error {
 	processmanager.Daemon()
-	processmanager.CheckPid("basewebsample")
+	processmanager.CheckPid("mining-monitoring")
 	runtimeConfig, err := ReadCfg(path)
 	if err != nil {
 		return err
@@ -23,6 +24,12 @@ func Run(path string) error {
 	if err != nil {
 		return err
 	}
+
+	server, err := socket.NewServer()
+	if err != nil {
+		return err
+	}
+
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, processmanager.SIGUSR1, processmanager.SIGUSR2)
 	go func() {
@@ -42,6 +49,13 @@ func Run(path string) error {
 			}
 		}
 	}()
+	defer server.Close()
+	go func() {
+		err := server.Run()
+		if err != nil {
+			panic(err)
+		}
+	}()
 	// todo db heartbeat
 	//// 初始化mongodb
 	//err = db.MongodbInit(runtimeConfig)
@@ -50,7 +64,7 @@ func Run(path string) error {
 	//	log.Logger.Fatal("mongodb start error " + err.Error())
 	//	panic(err)
 	//}
-	httpsvr.ListenAndServe(runtimeConfig)
+	httpsvr.ListenAndServe(runtimeConfig,server)
 	return nil
 }
 func ReadCfg(path string) (*model.RuntimeConfig, error) {

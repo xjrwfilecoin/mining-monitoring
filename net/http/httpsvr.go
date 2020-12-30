@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"mining-monitoring/log"
 	"mining-monitoring/model"
+	"mining-monitoring/net/socket"
 	"net/http"
 	"os"
 	"time"
@@ -27,17 +28,14 @@ func cors() gin.HandlerFunc {
 	}
 }
 
-//ListenAndServe 启动管理端webserver
-func ListenAndServe(cfg *model.RuntimeConfig) {
+
+func ListenAndServe(cfg *model.RuntimeConfig,server *socket.Server) {
 	gin.SetMode(gin.ReleaseMode)
 	httpRouter := gin.New()
-
 	httpRouter.Use(cors())
 	httpRouter.Use(log.MyGinLogger(cfg.LogPath))
 	httpRouter.Use(gin.Recovery())
-
-	UseApiV1(httpRouter)
-
+	UseApiV1(httpRouter,server)
 	// 静态资源目录
 	webRootDir := "./webroot"
 	if s, err := os.Stat(webRootDir); err != nil || !s.IsDir() {

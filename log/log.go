@@ -111,16 +111,26 @@ func MyLogicLogger(logPath string) (*logrus.Logger, error) {
 }
 
 func Info(msg ...interface{}) {
-	Logger.Infoln(msg)
+	if Logger != nil {
+		Logger.Infoln(msg)
+	}
 }
 
 func Debug(msg ...interface{}) {
-	Logger.Debugln(msg)
+	if Logger != nil {
+		Logger.Debugln(msg)
+	}
 }
 
-func Warn(msg ...interface{}){
-	Logger.Warnln(msg)
+func Warn(msg ...interface{}) {
+	if Logger != nil {
+		Logger.Warnln(msg)
+
+	}
 }
-func Error(msg ...interface{}){
-	Logger.Errorln(msg)
+func Error(msg ...interface{}) {
+	if Logger != nil {
+		Logger.Errorln(msg)
+
+	}
 }
