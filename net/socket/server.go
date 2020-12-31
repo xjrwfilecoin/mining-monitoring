@@ -3,6 +3,8 @@ package socket
 import (
 	"fmt"
 	"github.com/googollee/go-socket.io"
+	"github.com/googollee/go-socket.io/engineio"
+	"github.com/googollee/go-socket.io/engineio/transport"
 	"mining-monitoring/log"
 )
 
@@ -50,7 +52,7 @@ func (ss *Server) Run() error {
 		s.Emit("reply", "have "+msg)
 	})
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
-		log.Error("socketIo error ", s.ID(), e.Error())
+		log.Error("socketIo error ", e.Error())
 	})
 
 	ss.server.OnDisconnect(ss.namespace, func(s socketio.Conn, reason string) {
@@ -61,7 +63,12 @@ func (ss *Server) Run() error {
 }
 
 func NewServer() (*Server, error) {
-	server, err := socketio.NewServer(nil)
+	options := engineio.Options{
+		Transports :        []transport.Transport{
+
+		},
+	}
+	server, err := socketio.NewServer(&options)
 	if err != nil {
 		return nil, fmt.Errorf("init socket-io server %v \n", err)
 	}

@@ -8,14 +8,12 @@ import (
 )
 
 func main() {
-
+	query:=make(map[string]string)
 	opts := &socketio_client.Options{
 		Transport: "websocket",
-		Query:     make(map[string]string),
+		Query:     query,
 	}
-	opts.Query["user"] = "user"
-	opts.Query["pwd"] = "pass"
-	uri := "http://127.0.0.1:9090/socket.io/"
+	uri := "http://192.168.1.22:9090/socket.io/"
 
 	client, err := socketio_client.NewClient(uri, opts)
 	if err != nil {
