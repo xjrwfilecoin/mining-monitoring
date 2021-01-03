@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-/**
-向lotus节点获取数据的疯转 client
-*/
-
 var client *http.Client
 
 func NewHttpClient() *http.Client {

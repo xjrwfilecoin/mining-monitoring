@@ -8,6 +8,7 @@ import (
 	httpsvr "mining-monitoring/net/http"
 	"mining-monitoring/net/socket"
 	"mining-monitoring/processmanager"
+	"mining-monitoring/shellParsing"
 	"os"
 	"os/signal"
 	"syscall"
@@ -24,11 +25,8 @@ func Run(path string) error {
 	if err != nil {
 		return err
 	}
-
-	server, err := socket.NewServer()
-	if err != nil {
-		return err
-	}
+	// 注册socketIo路由
+	socket.Router(socket.SServer)
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, processmanager.SIGUSR1, processmanager.SIGUSR2)
@@ -49,13 +47,29 @@ func Run(path string) error {
 			}
 		}
 	}()
-	defer server.Close()
+	defer socket.SServer.Close()
 	go func() {
-		err := server.Run()
+		err := socket.SServer.Run()
 		if err != nil {
 			panic(err)
 		}
 	}()
+
+	minerObjSign := make(chan interface{}, 1)
+	go func() {
+		for {
+			select {
+			case result := <-minerObjSign:
+				log.Debug("send subMinerInfo:  ",result)
+				socket.BroadCaseMsg("miner最新消息")
+			default:
+
+			}
+		}
+	}()
+
+	go shellParsing.MinerInfoManager.Run(minerObjSign)
+
 	// todo db heartbeat
 	//// 初始化mongodb
 	//err = db.MongodbInit(runtimeConfig)
@@ -64,7 +78,7 @@ func Run(path string) error {
 	//	log.Logger.Fatal("mongodb start error " + err.Error())
 	//	panic(err)
 	//}
-	httpsvr.ListenAndServe(runtimeConfig,server)
+	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
 }
 func ReadCfg(path string) (*model.RuntimeConfig, error) {

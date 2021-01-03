@@ -1,8 +1,7 @@
 package service
 
-// 用户相关
-type IUserService interface {
-	Login(username, password, devId string) (interface{}, int, error)
-	PhoneLogin(username, code, devId string) (interface{}, int, error)
-}
+import socketio "github.com/googollee/go-socket.io"
 
+type IMinerInfo interface {
+	MinerInfo(s socketio.Conn, msg string)
+}

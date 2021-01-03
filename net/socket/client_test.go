@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/googollee/go-socket.io/engineio"
 	"github.com/googollee/go-socket.io/engineio/transport"
@@ -10,7 +9,6 @@ import (
 	"github.com/zhouhui8915/go-socket.io-client"
 	"io/ioutil"
 	"log"
-	"os"
 	"testing"
 	"time"
 )
@@ -19,7 +17,7 @@ func TestSocketClient(t *testing.T) {
 	dialer := engineio.Dialer{
 		Transports: []transport.Transport{polling.Default, websocket.Default},
 	}
-	conn, err := dialer.Dial("http://localhost:8899/socket.io/", nil)
+	conn, err := dialer.Dial("http://localhost:8000/socket.io/", nil)
 	if err != nil {
 		log.Fatalln("dial error:", err)
 	}
@@ -76,10 +74,7 @@ func TestSocketClient(t *testing.T) {
 			log.Println("write error:", err)
 			return
 		}
-		if err := w.Close(); err != nil {
-			log.Println("write close error:", err)
-			return
-		}
+
 		time.Sleep(time.Second * 5)
 	}
 }
@@ -93,7 +88,7 @@ func TestSocketIOClient(t *testing.T){
 	}
 	opts.Query["user"] = "user"
 	opts.Query["pwd"] = "pass"
-	uri := "http://localhost:8899/socket.io/"
+	uri := "http://localhost:9090/socket.io/"
 
 	client, err := socketio_client.NewClient(uri, opts)
 	if err != nil {
@@ -114,11 +109,6 @@ func TestSocketIOClient(t *testing.T){
 		log.Printf("on disconnect\n")
 	})
 
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		data, _, _ := reader.ReadLine()
-		command := string(data)
-		client.Emit("message", "test")
-		log.Printf("send message:%v\n", command)
-	}
+	//reader := bufio.NewReader(os.Stdin)
+	select {}
 }

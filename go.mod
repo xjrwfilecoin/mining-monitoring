@@ -14,7 +14,7 @@ require (
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.3 // indirect
-	github.com/mattn/go-sqlite3 v1.14.5
+	github.com/mattn/go-sqlite3 v1.14.5 // indirect
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
@@ -24,7 +24,7 @@ require (
 	github.com/tidwall/gjson v1.6.4
 	github.com/zhouhui8915/engine.io-go v0.0.0-20150910083302-02ea08f0971f
 	github.com/zhouhui8915/go-socket.io-client v0.0.0-20200925034401-83ee73793ba4
-	go.mongodb.org/mongo-driver v1.4.4
+	go.mongodb.org/mongo-driver v1.4.4 // indirect
 	golang.org/x/text v0.3.3
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect

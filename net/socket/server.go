@@ -5,31 +5,51 @@ import (
 	"github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
 	"github.com/googollee/go-socket.io/engineio/transport"
+	"github.com/googollee/go-socket.io/engineio/transport/polling"
+	"github.com/googollee/go-socket.io/engineio/transport/websocket"
+	_ "github.com/googollee/go-socket.io/engineio/transport/websocket"
 	"mining-monitoring/log"
+	"net/http"
 )
 
-type Options struct {
-	namespace string
-	event     string
-	root      string
+// todo 通用
+
+var SServer = NewServer()
+
+// todo
+func BroadCaseMsg(obj interface{}) {
+	SServer.broadcastMessage(DefaultNamespace, DefaultRoom, SubMinerInfo, obj)
 }
 
-// todo 通用
 type Server struct {
 	server    *socketio.Server
-	options   *Options
 	namespace string
-	event     string
-	room      string
 }
 
-func (ss *Server) GetServer() *socketio.Server{
+func (ss *Server) GetServer() *socketio.Server {
 	return ss.server
 }
 
+func (ss *Server) broadcastMessage(namespace, room, event string, obj interface{}) {
+	ok := ss.server.BroadcastToRoom(namespace, room, event, obj)
+	if !ok{
+		log.Error("broadcast msg fail ",obj)
+	}
+}
 
-func (ss *Server) BroadcastMsg(obj interface{}) {
-	ss.server.BroadcastToRoom(ss.namespace, ss.room, ss.event)
+func (ss *Server) RegisterRouter(namespace, event string, fn func(s socketio.Conn, msg string)) {
+	if namespace == "" {
+		namespace = "/"
+	}
+	if event == "" {
+		panic(fmt.Errorf("socketIo event is empty"))
+	}
+
+	ss.server.OnEvent(namespace, event, fn)
+}
+
+func (ss *Server) JoinRoom(namespace, room string, s socketio.Conn) {
+	ss.server.JoinRoom(namespace, room, s)
 }
 
 func (ss *Server) Close() error {
@@ -41,16 +61,11 @@ func (ss *Server) Close() error {
 
 func (ss *Server) Run() error {
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
-		log.Debug("websocket client connect ", s.ID(), s.LocalAddr(),)
-		s.Emit("message","test")
-		s.Join(ss.room)
+		log.Debug("socketIO client connect ", s.ID(), s.LocalAddr(), )
+		s.Emit("message", "connected ")
 		return nil
 	})
 
-	ss.server.OnEvent(ss.namespace, ss.event, func(s socketio.Conn, msg string) {
-		log.Debug("socketIo onEvent ", msg)
-		s.Emit("reply", "have "+msg)
-	})
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
 		log.Error("socketIo error ", e.Error())
 	})
@@ -62,21 +77,29 @@ func (ss *Server) Run() error {
 
 }
 
-func NewServer() (*Server, error) {
-	options := engineio.Options{
-		Transports :        []transport.Transport{
-
+func NewServer() (*Server) {
+	server, err := socketio.NewServer(
+		&engineio.Options{
+			Transports: []transport.Transport{
+				&websocket.Transport{
+					CheckOrigin: func(r *http.Request) bool {
+						return true
+					},
+				},
+				&polling.Transport{
+					CheckOrigin: func(r *http.Request) bool {
+						return true
+					},
+				},
+			},
 		},
-	}
-	server, err := socketio.NewServer(&options)
+	)
 	if err != nil {
-		return nil, fmt.Errorf("init socket-io server %v \n", err)
+		panic(fmt.Errorf("init socket-io server %v \n", err))
 	}
 	return &Server{
 		server:    server,
 		namespace: "/",
-		room:      "lotus-miner",
-		event:     "message",
-	}, nil
+	}
 
 }
