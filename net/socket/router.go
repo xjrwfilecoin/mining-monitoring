@@ -20,7 +20,7 @@ func Router(server *Server) {
 	server.RegisterRouter(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
 	server.RegisterRouter(DefaultNamespace, SubMinerInfo, func(s socketio.Conn, msg string) {
 		SServer.JoinRoom(DefaultNamespace, DefaultRoom, s)
-		log.Info(s.ID(), "join room ", DefaultRoom)
-		s.Emit(SubMinerInfo, "sub....")
+		log.Info(s.ID(), s.LocalAddr(),"join room ", DefaultRoom)
+		s.Emit(SubMinerInfo, )
 	})
 }

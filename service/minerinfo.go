@@ -13,6 +13,7 @@ func (m *MinerInfoService) MinerInfo(s socketio.Conn, msg string) {
 	log.Debug(s.ID(), s.LocalAddr(), "get minerInfo: ", msg)
 	currentMinerInfo := shellParsing.MinerInfoManager.GetCurrentMinerInfo()
 	// todo
+	log.Info("minerInfo result: ",currentMinerInfo)
 	s.Emit("minerInfo", currentMinerInfo)
 
 }
