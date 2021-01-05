@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"regexp"
 	"testing"
 )
 
@@ -158,47 +157,71 @@ func TestWorkerJobs(t *testing.T){
 	}
 }
 
-var hardwareInfo =`172.70.16.101 | CHANGED | rc=0 >>
-k10temp-pci-00c3
-Adapter: PCI adapter
-temp1:         +0.0°C  (high = +70.0°C)
+var hardwareInfo =`power_meter-acpi-0
+Adapter: ACPI interface
+power1:      184.00 W  (interval =   1.00 s)
 
-nouveau-pci-0400
-Adapter: PCI adapter
-GPU core:     +0.91 V  (min =  +0.80 V, max =  +1.19 V)
-temp1:        +27.0°C  (high = +95.0°C, hyst =  +3.0°C)
-                       (crit = +105.0°C, hyst =  +5.0°C)
-                       (emerg = +135.0°C, hyst =  +5.0°C)
+coretemp-isa-0000
+Adapter: ISA adapter
+Package id 0:  +43.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 0:        +42.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 1:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 2:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 3:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 4:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 5:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 6:        +38.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 7:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 8:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 9:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 10:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 11:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 12:       +41.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 13:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 14:       +42.0 C  (high = +81.0 C, crit = +91.0 C)
+Core 15:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
 
- 15:27:19 up 25 days, 12:53,  2 users,  load average: 4.94, 4.19, 4.35
+ 11:24:15 up 5 days, 21:51,  1 user,  load average: 20.45, 17.81, 17.44
               total        used        free      shared  buff/cache   available
-Mem:           125G        114G        732M        2.4M         10G         10G
+Mem:           251G        101G        1.9G         18M        147G        148G
 Swap:            0B          0B          0B
-Filesystem      Size  Used Avail Use% Mounted on
-udev             63G     0   63G   0% /dev
-tmpfs            13G  1.2M   13G   1% /run
-/dev/nvme0n1p2  1.8T  528G  1.2T  32% /
-tmpfs            63G     0   63G   0% /dev/shm
-tmpfs           5.0M     0  5.0M   0% /run/lock
-tmpfs            63G     0   63G   0% /sys/fs/cgroup
-/dev/nvme0n1p1  511M  6.1M  505M   2% /boot/efi
-/dev/md127      7.3T  2.5T  4.9T  34% /opt/hdd_pool
-tmpfs            13G     0   13G   0% /run/user/0
-tmpfs            13G     0   13G   0% /run/user/1000
-Inter-|   Receive                                                |  Transmit
- face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
-enp10s0: 515659456584 4469525963    0 83152    0     0          0   1103181 133117032642438 89567040730    0    0    0     0       0          0
-docker0: 14297868050 2605023    0    0    0     0          0         0 392878806 5683481    0    0    0     0       0          0
-    lo:   86178     854    0    0    0     0          0         0    86178     854    0    0    0     0       0          0
-  eno1: 1322093904 14310224    0 427497    0     0          0   1174643 15325372882 16834889    0    0    0     0       0          0`
+Filesystem               Size  Used Avail Use% Mounted on
+devtmpfs                 126G     0  126G   0% /dev
+tmpfs                    126G     0  126G   0% /dev/shm
+tmpfs                    126G   19M  126G   1% /run
+tmpfs                    126G     0  126G   0% /sys/fs/cgroup
+/dev/mapper/centos-root  372G  6.5G  365G   2% /
+/dev/sda2               1014M  147M  868M  15% /boot
+/dev/sda1                200M   12M  189M   6% /boot/efi
+/dev/md127                51T  592G   51T   2% /opt/hdd_pool
+tmpfs                     26G     0   26G   0% /run/user/1000
+tmpfs                     26G     0   26G   0% /run/user/0
+Linux 3.10.0-1127.el7.x86_64 (localhost.localdomain)    01/05/21        _x86_64_        (32 CPU)
 
-var cpuTemperatureReg = regexp.MustCompile(``)
-var cpuLoadReg = regexp.MustCompile(``)
-var gpuTemperatureReg = regexp.MustCompile(``)
-var gpuLoadReg = regexp.MustCompile(``)
-var memoryUsedReg = regexp.MustCompile(``)
-var memoryTotalReg = regexp.MustCompile(``)
-var diskUsedRateReg =regexp.MustCompile(``)
+11:24:15        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
+11:24:16    enp180s0f0      5.00      0.00      0.29      0.00      0.00      0.00      0.00
+11:24:16         eno1  44111.00  44003.00  28076.70   7590.19      0.00      0.00      0.00
+11:24:16         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+11:24:16    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
+11:24:16           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+11:24:16        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
+11:24:17    enp180s0f0      5.00      0.00      0.29      0.00      0.00      0.00      0.00
+11:24:17         eno1  86274.00  86230.00  54972.77  14884.79      0.00      0.00      0.00
+11:24:17         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+11:24:17    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
+11:24:17           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
+Average:    enp180s0f0      5.00      0.00      0.29      0.00      0.00      0.00      0.00
+Average:         eno1  65192.50  65116.50  41524.73  11237.49      0.00      0.00      0.00
+Average:         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
+Average:           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+unable to set locale, falling back to the default locale
+Total DISK READ :       0.00 B/s | Total DISK WRITE :      27.47 M/s`
+
+
 
 
 func TestHardwareInfo(t *testing.T){
@@ -210,18 +233,30 @@ func TestHardwareInfo(t *testing.T){
 	fmt.Println("cpuLoad: ",cpuLoad[0][1])
 
 
-	gpuLoad := gpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("gpuLoad: ",gpuLoad[0][1])
+	//gpuLoad := gpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
+	//fmt.Println("gpuLoad: ",gpuLoad[0][1])
 
 	memoryUsed := memoryUsedReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("memoryUsed: ",memoryUsed[0][1])
+	fmt.Println("memoryUsed: ",memoryUsed[0][2])
 
-	memoryTotal := memoryTotalReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("memoryTotal: ",memoryTotal[0][1])
+	//memoryTotal := memoryTotalReg.FindAllStringSubmatch(hardwareInfo, 1)
+	fmt.Println("memoryTotal: ",memoryUsed[0][1])
 
 	diskUsed := diskUsedRateReg.FindAllStringSubmatch(hardwareInfo, 1)
 	fmt.Println("diskUsed: ",diskUsed[0][1])
 
+	diskRead := diskReadReg.FindAllStringSubmatch(hardwareInfo, 1)
+	fmt.Println("diskRead: ",diskRead[0][1])
+
+	diskWrite := diskWriteReg.FindAllStringSubmatch(hardwareInfo, 1)
+	fmt.Println("diskWrite: ",diskWrite[0][1])
+
+}
+
+
+
+func TestShellParse(t *testing.T){
+	//shellParse, _ := NewShellParse("")
 
 }
 

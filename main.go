@@ -6,12 +6,20 @@ import (
 	"mining-monitoring/app"
 )
 
-var path string
+var configPath string
+var workerPath string
 
 func main() {
-	flag.StringVar(&path,"path","./configtest.json","please config file path ")
+	flag.StringVar(&configPath, "configPath", "./configtest.json", "please config file configPath ")
+	flag.StringVar(&workerPath, "workerPath", "./workerhost.json", "please config file workerPath ")
 	flag.Parse()
-	err := app.Run(path)
+	if configPath == "" {
+		configPath = "./configtest.json"
+	}
+	if workerPath == "" {
+		workerPath = "./workerhost.json"
+	}
+	err := app.Run(configPath)
 	if err != nil {
 		log.Fatal(err)
 	}

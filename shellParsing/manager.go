@@ -1,24 +1,28 @@
 package shellParsing
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"mining-monitoring/log"
 	"time"
 )
 
-var MinerInfoManager = NewManager()
-
 type Manager struct {
 	currentInfo map[string]interface{}
 	shellParse  *ShellParse
+	Workers     []WorkerInfo
 }
 
 func (m *Manager) GetCurrentMinerInfo() interface{} {
 	return m.currentInfo
 }
 
-func (m *Manager) doShell() interface{} {
-	currentInfo := m.shellParse.getCurrentInfo()
-	return m.getEffectiveInfo(currentInfo)
+func (m *Manager) DoShell() interface{} {
+	taskInfo := m.shellParse.getTaskInfo()
+	fmt.Printf("minerInfo:  %v \n", taskInfo)
+	// todo
+	return taskInfo
 
 }
 
@@ -52,7 +56,7 @@ func (m *Manager) Run(obj chan interface{}) {
 		select {
 		case <-ticker.C:
 			log.Debug("start timer get minerInfo ")
-			result := m.doShell()
+			result := m.DoShell()
 			obj <- result
 		default:
 
@@ -60,9 +64,20 @@ func (m *Manager) Run(obj chan interface{}) {
 	}
 }
 
-func NewManager() *Manager {
+func NewManager(path string) (*Manager, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read workerhost error %v \n", err)
+	}
+	var workers []WorkerInfo
+	err = json.Unmarshal(data, &workers)
+	if err != nil {
+		return nil, fmt.Errorf("parse json error: %v \n", err)
+	}
+
 	return &Manager{
 		currentInfo: map[string]interface{}{},
-		shellParse:  &ShellParse{},
-	}
+		shellParse:  NewShellParse(),
+		Workers:     workers,
+	}, nil
 }
