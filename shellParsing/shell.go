@@ -18,11 +18,45 @@ func NewShellParse() *ShellParse {
 	return &ShellParse{}
 }
 
-func (sp *ShellParse) getTaskInfo() map[string]interface{} {
-	// todo
-	return nil
+func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
+	minerInfo, err := sp.GetMinerInfo()
+	if err != nil {
+		return nil, err
+	}
+	postBalance, err := sp.GetPostBalance()
+	if err != nil {
+		return nil, err
+	}
+	minerJobs, err := sp.GetMinerJobs()
+	if err != nil {
+		return nil, err
+	}
+	msgNums, err := sp.MsgNums()
+	if err != nil {
+		return nil, err
+	}
+	hardwareInfo, err := sp.BatchHardwareInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	result := mergeMaps(minerInfo, msgNums, postBalance, minerJobs, hardwareInfo)
+
+	return result, nil
 }
 
+
+
+func (sp *ShellParse) MsgNums() (map[string]interface{}, error) {
+	cmd := exec.CommandContext(context.TODO(), "lotus", `mpool pending | grep -a "Version" |wc -l`)
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
+	}
+	res := make(map[string]interface{})
+	res["messageNums"] = string(data)
+	return res, nil
+}
 
 func (sp *ShellParse) BatchHardwareInfo() (map[string]interface{}, error) {
 	cmd := exec.CommandContext(context.TODO(), "bash", "sensors&&uptime&&free -h&&df -h&&sar -n DEV 1 2&& iotop -bn1|head -n 2")
@@ -48,12 +82,13 @@ func (sp *ShellParse) BatchHardwareInfo() (map[string]interface{}, error) {
 	return param, nil
 }
 
-func (sp *ShellParse) GetMinerJobs(res map[string]interface{}) error {
+func (sp *ShellParse) GetMinerJobs() (map[string]interface{}, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus-miner", "sealing jobs")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
+		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
 	}
+	result := make(map[string]interface{})
 	param := make(map[string]map[string][]interface{})
 	canParse := false
 	reader := bufio.NewReader(bytes.NewBuffer(data))
@@ -104,27 +139,29 @@ func (sp *ShellParse) GetMinerJobs(res map[string]interface{}) error {
 
 		}
 	}
-	res["workerInfo"] = param
-	return nil
+	result["workerInfo"] = param
+	return result, nil
 }
 
-func (sp *ShellParse) GetPostBalance(res map[string]interface{}) error {
+func (sp *ShellParse) GetPostBalance() (map[string]interface{}, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus-miner", "actor control list")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
+		return nil, fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
 	}
+	res := make(map[string]interface{})
 	postBalance := postBalanceReg.FindAllStringSubmatch(string(data), 1)
 	res["postBalance"] = postBalance[0][1]
-	return nil
+	return res, nil
 }
 
-func (sp *ShellParse) GetMinerInfo(res map[string]interface{}) error {
+func (sp *ShellParse) GetMinerInfo() (map[string]interface{}, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus-miner", "info")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("exec lotus-miner info  %v \n", err)
+		return nil, fmt.Errorf("exec lotus-miner info  %v \n", err)
 	}
+	res := make(map[string]interface{})
 	src := string(data)
 	minerId := minerIdReg.FindString(src)
 	res["minerId"] = minerId
@@ -150,5 +187,17 @@ func (sp *ShellParse) GetMinerInfo(res map[string]interface{}) error {
 	res["deletedSectors"] = deletedSectors[0][1]
 	failSectors := failSectorReg.FindAllStringSubmatch(src, 1)
 	res["failSectors"] = failSectors[0][1]
-	return nil
+	return res, nil
+}
+
+func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, m := range maps {
+		for k, v := range m {
+			tk := k
+			tV := v
+			result[tk] = tV
+		}
+	}
+	return result
 }

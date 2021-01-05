@@ -18,11 +18,14 @@ func (m *Manager) GetCurrentMinerInfo() interface{} {
 	return m.currentInfo
 }
 
-func (m *Manager) DoShell() interface{} {
-	taskInfo := m.shellParse.getTaskInfo()
+func (m *Manager) DoShell() (interface{}, error) {
+	taskInfo, err := m.shellParse.getTaskInfo()
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("minerInfo:  %v \n", taskInfo)
 	// todo
-	return taskInfo
+	return taskInfo, nil
 
 }
 
@@ -56,7 +59,11 @@ func (m *Manager) Run(obj chan interface{}) {
 		select {
 		case <-ticker.C:
 			log.Debug("start timer get minerInfo ")
-			result := m.DoShell()
+			result, err := m.DoShell()
+			if err != nil {
+				fmt.Printf("doShell error %v \n", err)
+				continue
+			}
 			obj <- result
 		default:
 
