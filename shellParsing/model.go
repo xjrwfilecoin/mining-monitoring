@@ -42,6 +42,9 @@ type Task struct {
 	Time     string // 耗时
 }
 
+
+
+
 type Worker struct {
 	hostname     string
 	currentQueue []Task  // 当前任务
