@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"reflect"
 	"strings"
+	"time"
 )
 
 type ShellParse struct {
@@ -27,35 +29,41 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	minerJobs, err := sp.GetMinerJobs()
-	if err != nil {
-		return nil, err
-	}
 	msgNums, err := sp.MsgNums()
 	if err != nil {
 		return nil, err
 	}
+	minerJobs, err := sp.GetMinerJobs()
+	if err != nil {
+		return nil, err
+	}
+
 	hardwareInfo, err := sp.BatchHardwareInfo()
 	if err != nil {
 		return nil, err
 	}
 
-	result := mergeMaps(minerInfo, msgNums, postBalance, minerJobs, hardwareInfo)
+
 
 	return result, nil
 }
 
+// 将硬件信息和任务信息合并起来
+// hardwareList 硬件信息列表
+func mergeWorkerInfo(src []map[string]interface{}, hardwareList map[string]interface{}) map[string]interface{} {
+	for i := 0; i < len(src); i++ {
+		workerInfo := src[i]
+		workerInfo["hardwareInfo"] = hardwareList[workerInfo["hostname"]]
+	}
+}
 
-
-func (sp *ShellParse) MsgNums() (map[string]interface{}, error) {
+func (sp *ShellParse) MsgNums() (string, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus", `mpool pending | grep -a "Version" |wc -l`)
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
+		return "", fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
 	}
-	res := make(map[string]interface{})
-	res["messageNums"] = string(data)
-	return res, nil
+	return string(data), nil
 }
 
 func (sp *ShellParse) BatchHardwareInfo() (map[string]interface{}, error) {
@@ -82,112 +90,138 @@ func (sp *ShellParse) BatchHardwareInfo() (map[string]interface{}, error) {
 	return param, nil
 }
 
-func (sp *ShellParse) GetMinerJobs() (map[string]interface{}, error) {
+// 获取所有worker硬件信息
+func (sp *ShellParse) hardwareInfo(workers []WorkerInfo) ([]map[string]interface{}, error) {
+	if len(workers) == 0 {
+		return nil, nil
+	}
+	obj := make(chan map[string]interface{}, 10)
+	for i := 0; i < len(workers); i++ {
+		wInfo := workers[i]
+		go sp.runHardware(wInfo, obj)
+	}
+	ctx, _ := context.WithTimeout(context.TODO(), 60*time.Second)
+
+	total := 0
+	var resInfo []map[string]interface{}
+	for {
+		select {
+		case res := <-obj:
+			resInfo = append(resInfo, res)
+			total = total + 1
+			if total == len(workers) {
+				return resInfo, nil
+			}
+		case <-ctx.Done():
+			return resInfo, nil
+		}
+	}
+}
+
+func (sp *ShellParse) runHardware(w WorkerInfo, obj chan map[string]interface{}) {
+
+	// todo
+}
+
+
+func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus-miner", "sealing jobs")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
 	}
-	result := make(map[string]interface{})
-	param := make(map[string]map[string][]interface{})
 	canParse := false
+	var taskList []Task
 	reader := bufio.NewReader(bytes.NewBuffer(data))
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil || io.EOF == err {
 			break
 		}
-		if strings.HasPrefix(line, "ID") {
+		if !canParse && strings.HasPrefix(line, "ID") {
 			canParse = true
+			continue
 		}
-		// todo 优化
 		if canParse {
-			task := strings.Split(line, " ")
-
-			// 判断 hostname是否存在
-			if vMap, ok := param[task[3]]; ok {
-				// 判断某一任务类型是否存在
-				if t, ok := vMap[task[4]]; ok {
-					t = append(t, map[string]interface{}{
-						"type":      task[4],
-						"sectorId":  task[1],
-						"status":    task[5],
-						"spendTime": task[6],
-					})
-				} else {
-					vMap[task[4]] = []interface{}{
-						map[string]interface{}{
-							"type":      task[4],
-							"sectorId":  task[1],
-							"status":    task[5],
-							"spendTime": task[6],
-						},
-					}
-				}
-			} else {
-				param[task[3]] = map[string][]interface{}{
-					task[3]: []interface{}{
-						map[string]interface{}{
-							"type":      task[4],
-							"sectorId":  task[1],
-							"status":    task[5],
-							"spendTime": task[6],
-						},
-					},
-				}
+			if task, ok := getHardwareInfo(line); ok {
+				taskList = append(taskList, task)
 			}
 
 		}
 	}
-	result["workerInfo"] = param
-	return result, nil
+	return taskList, nil
 }
 
-func (sp *ShellParse) GetPostBalance() (map[string]interface{}, error) {
+func getHardwareInfo(line string) (Task, bool) {
+	arrs := strings.Split(line, " ")
+	if len(arrs) < 7 {
+		return Task{}, false
+	}
+	return Task{
+		Id:       arrs[0],
+		Sector:   arrs[1],
+		Worker:   arrs[2],
+		HostName: arrs[3],
+		Task:     arrs[4],
+		State:    arrs[5],
+		Time:     arrs[6],
+	}, true
+}
+
+func (sp *ShellParse) GetPostBalance() (string, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus-miner", "actor control list")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
+		return "", fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
 	}
-	res := make(map[string]interface{})
 	postBalance := postBalanceReg.FindAllStringSubmatch(string(data), 1)
-	res["postBalance"] = postBalance[0][1]
-	return res, nil
+	pb := postBalance[0][1]
+	return pb, nil
 }
 
-func (sp *ShellParse) GetMinerInfo() (map[string]interface{}, error) {
+func (sp *ShellParse) GetMinerInfo() (*MinerInfo, error) {
 	cmd := exec.CommandContext(context.TODO(), "lotus-miner", "info")
 	data, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("exec lotus-miner info  %v \n", err)
 	}
-	res := make(map[string]interface{})
 	src := string(data)
+	minerInfo := &MinerInfo{}
 	minerId := minerIdReg.FindString(src)
-	res["minerId"] = minerId
+	minerInfo.minerId = minerId
 	minerBalance := minerBalanceReg.FindAllStringSubmatch(src, 1)
-	res["minerBalance"] = minerBalance[0][1]
+	minerInfo.MinerBalance = minerBalance[0][1]
 	workerBalance := workerBalanceReg.FindAllStringSubmatch(src, 1)
-	res["workerBalance"] = workerBalance[0][1]
+	minerInfo.workerBalance = workerBalance[0][1]
 	pledgeBalance := pledgeBalanceReg.FindAllStringSubmatch(src, 1)
-	res["pledgeBalance"] = pledgeBalance[0][1]
+	minerInfo.minerId = pledgeBalance[0][1]
 	totalPower := totalPowerReg.FindAllStringSubmatch(src, 1)
-	res["totalPower"] = totalPower[0][1]
+	minerInfo.minerId = totalPower[0][1]
 	effectPower := effectPowerReg.FindAllStringSubmatch(src, 1)
-	res["effectPower"] = effectPower[0][1]
+	minerInfo.minerId = effectPower[0][1]
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(src, 1)
-	res["totalSectors"] = totalSectors[0][1]
+	minerInfo.minerId = totalSectors[0][1]
 	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 1)
-	res["effectSectors"] = effectSectors[0][1]
+	minerInfo.minerId = effectSectors[0][1]
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
-	res["errorsSectors"] = errorsSectors[0][1]
+	minerInfo.minerId = errorsSectors[0][1]
 	recoverySectors := recoverySectorReg.FindAllStringSubmatch(src, 1)
-	res["recoverySectors"] = recoverySectors[0][1]
+	minerInfo.minerId = recoverySectors[0][1]
 	deletedSectors := deletedSectorReg.FindAllStringSubmatch(src, 1)
-	res["deletedSectors"] = deletedSectors[0][1]
+	minerInfo.minerId = deletedSectors[0][1]
 	failSectors := failSectorReg.FindAllStringSubmatch(src, 1)
-	res["failSectors"] = failSectors[0][1]
-	return res, nil
+	minerInfo.minerId = failSectors[0][1]
+	return minerInfo, nil
+}
+
+func structToMap(obj interface{}) map[string]interface{} {
+	elem := reflect.ValueOf(&obj).Elem()
+	m := make(map[string]interface{})
+	relType := elem.Type()
+	for i := 0; i < relType.NumField(); i++ {
+		m[relType.Field(i).Name] = elem.Field(i).Interface()
+	}
+	return m
 }
 
 func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
