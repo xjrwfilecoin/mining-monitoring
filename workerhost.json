@@ -1,8 +1,7 @@
 [
   {
-    "HostName": "test_01",
-    "IP": "172.16.8.110",
-    "Gpu": "dddd"
-
+    "HostName": "worker01",
+    "IP": "192.168.0.10",
+    "GPU": ""
   }
 ]

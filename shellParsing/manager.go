@@ -26,12 +26,14 @@ func (m *Manager) DoShell() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	// todo
 	return taskInfo, nil
 
 }
 
 func (m *Manager) Run(obj chan interface{}) {
+	if e := recover(); e != nil {
+		log.Error("manager shell error %v \n", e)
+	}
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 	for {

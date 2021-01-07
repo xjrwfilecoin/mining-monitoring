@@ -13,13 +13,7 @@ func main() {
 	flag.StringVar(&configPath, "configPath", "./configtest.json", "please config file configPath ")
 	flag.StringVar(&workerPath, "workerPath", "./workerhost.json", "please config file workerPath ")
 	flag.Parse()
-	if configPath == "" {
-		configPath = "./configtest.json"
-	}
-	if workerPath == "" {
-		workerPath = "./workerhost.json"
-	}
-	err := app.Run(configPath)
+	err := app.Run(configPath,workerPath)
 	if err != nil {
 		log.Fatal(err)
 	}

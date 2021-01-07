@@ -69,7 +69,6 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 
 
 func (sp *ShellParse) MsgNums() (interface{}, error) {
-	//data, err := sp.ExecCmd("lotus", `mpool pending | grep -a "Version" |wc -l`)
 	data, err := sp.ExecCmd("lotus", `mpool`, "pending", )
 	if err != nil {
 		return "", fmt.Errorf("exec mpool pending: %v \n", err)
@@ -118,23 +117,22 @@ func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
 		return
 	}
 	hardwareInfo.HostName = w.HostName
-	resource := string(data)
-	cpuTemperature := cpuTemperatureReg.FindAllStringSubmatch(resource, 1)
+	cpuTemperature := cpuTemperatureReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.CpuTemper = getRegexValue(cpuTemperature)
 
-	cpuLoad := cpuLoadReg.FindAllStringSubmatch(resource, 1)
+	cpuLoad := cpuLoadReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.CpuLoad = getRegexValue(cpuLoad)
 
-	memoryUsed := memoryUsedReg.FindAllStringSubmatch(resource, 1)
+	memoryUsed := memoryUsedReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.UseMemory = getRegexValue(memoryUsed)
 	hardwareInfo.TotalMemory = getRegexValueById(memoryUsed, 2)
 
-	diskUsed := diskUsedRateReg.FindAllStringSubmatch(resource, 1)
+	diskUsed := diskUsedRateReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.UseDisk = getRegexValue(diskUsed)
-	diskRead := diskReadReg.FindAllStringSubmatch(resource, 1)
+	diskRead := diskReadReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.DiskR = getRegexValue(diskRead)
 
-	diskWrite := diskWriteReg.FindAllStringSubmatch(resource, 1)
+	diskWrite := diskWriteReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.DiskW = getRegexValue(diskWrite)
 	obj <- hardwareInfo
 	return

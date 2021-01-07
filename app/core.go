@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"mining-monitoring/log"
 	"mining-monitoring/model"
@@ -14,10 +15,10 @@ import (
 	"syscall"
 )
 
-func Run(path string) error {
+func Run(config, workerHost string) error {
 	processmanager.Daemon()
 	processmanager.CheckPid("mining-monitoring")
-	runtimeConfig, err := ReadCfg(path)
+	runtimeConfig, err := ReadCfg(config)
 	if err != nil {
 		return err
 	}
@@ -25,6 +26,12 @@ func Run(path string) error {
 	if err != nil {
 		return err
 	}
+
+	shellManager, err := shellParsing.NewManager(workerHost)
+	if err != nil {
+		return fmt.Errorf("init shell shellManager %v \n", err)
+	}
+
 	// 注册socketIo路由
 	socket.Router(socket.SServer)
 
@@ -60,15 +67,16 @@ func Run(path string) error {
 		for {
 			select {
 			case result := <-minerObjSign:
-				log.Debug("send subMinerInfo:  ",result)
-				socket.BroadCaseMsg("miner最新消息")
+				log.Debug("send subMinerInfo:  ", result)
+				socket.BroadCaseMsg(result)
 			default:
 
 			}
 		}
 	}()
 
-	go shellParsing.MinerInfoManager.Run(minerObjSign)
+	// todo
+	go shellManager.Run(minerObjSign)
 
 	// todo db heartbeat
 	//// 初始化mongodb
