@@ -8,12 +8,10 @@ import (
 	"io"
 	"mining-monitoring/log"
 	"os/exec"
-	"reflect"
 	"strings"
 	"time"
 )
 
-var debug = true
 
 type ShellParse struct {
 	Workers []WorkerInfo
@@ -69,53 +67,9 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	return minerInfoMap, nil
 }
 
-func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
-	// 根据 hostName分组
-	param := make(map[string][]Task)
-	for i := 0; i < len(tasks); i++ {
-		task := tasks[i]
-		if taskList, ok := param[task.HostName]; ok {
-			taskList = append(taskList, task)
-		} else {
-			param[task.HostName] = []Task{task}
-		}
-	}
 
-	result := make(map[string]interface{})
-	// 根据任务类型分组
-	for hostName, taskList := range param {
-		tk := hostName
-		param := tasksByType(taskList)
-		result[tk] = param
-	}
 
-	// 结合硬件信息
-	for i := 0; i < len(hardwareList); i++ {
-		hardware := hardwareList[i]
-		if info, ok := result[hardware.HostName]; ok {
-			tp := info.(map[string]interface{})
-			toMap := structToMap(&hardware)
-			result[hardware.HostName] = mergeMaps(tp, toMap)
-		}
-	}
-	return result
-}
 
-// 根据任务类型分组
-func tasksByType(res []Task) map[string]interface{} {
-	param := make(map[string]interface{})
-	for i := 0; i < len(res); i++ {
-		task := res[i]
-		if taskList, ok := param[task.Task]; ok {
-			tt := taskList.([]Task)
-			taskList = append(tt, task)
-			param[task.Task] = taskList
-		} else {
-			param[task.Task] = []Task{task}
-		}
-	}
-	return param
-}
 
 func (sp *ShellParse) MsgNums() (interface{}, error) {
 	//data, err := sp.ExecCmd("lotus", `mpool pending | grep -a "Version" |wc -l`)
@@ -283,43 +237,4 @@ func (sp *ShellParse) GetMinerInfo() (*MinerInfo, error) {
 	failSectors := failSectorReg.FindAllStringSubmatch(src, 1)
 	minerInfo.FailSectors = getRegexValue(failSectors)
 	return minerInfo, nil
-}
-
-func structToMap(obj interface{}) map[string]interface{} {
-	m := make(map[string]interface{})
-	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
-		return m
-	}
-	elem := reflect.ValueOf(obj).Elem()
-	relType := elem.Type()
-	for i := 0; i < relType.NumField(); i++ {
-		m[relType.Field(i).Name] = elem.Field(i).Interface()
-	}
-	return m
-}
-
-func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for _, m := range maps {
-		for k, v := range m {
-			tk := k
-			tV := v
-			result[tk] = tV
-		}
-	}
-	return result
-}
-
-func getRegexValue(src [][]string) string {
-	if len(src) == 0 || len(src[0]) == 0 {
-		return ""
-	}
-	return src[0][1]
-}
-
-func getRegexValueById(src [][]string, id int) string {
-	if len(src) == 0 || len(src[0]) < id {
-		return ""
-	}
-	return src[0][id]
 }
