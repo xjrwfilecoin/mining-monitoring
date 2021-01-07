@@ -41,20 +41,19 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	minerInfoMap["PostBalance"] = postBalance
 	log.Debug("PostBalance: %v \n", postBalance)
 
-
 	msgNums, err := sp.MsgNums()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("messageInfo: ",msgNums)
+	fmt.Println("messageInfo: ", msgNums)
 	minerInfoMap["messageNums"] = msgNums
 	log.Debug("msgNums: %v \n", msgNums)
-
 
 	minerJobs, err := sp.GetMinerJobs()
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("minerJobs: ", minerJobs)
 	log.Debug("minerJobs: %v \n", minerJobs)
 	hardwareInfo, err := sp.hardwareInfo(sp.Workers)
 	if err != nil {
@@ -62,6 +61,7 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	}
 	log.Debug("hardwareInfo: %v \n", hardwareInfo)
 
+	fmt.Println("hardwareInfo: ", hardwareInfo)
 	workerInfo := mergeWorkerInfo(minerJobs, hardwareInfo)
 	log.Debug("workerInfo: %v \n", workerInfo)
 
@@ -77,7 +77,7 @@ func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 		if taskList, ok := param[task.HostName]; ok {
 			taskList = append(taskList, task)
 		} else {
-			param[task.HostName] = []Task{}
+			param[task.HostName] = []Task{task}
 		}
 	}
 
@@ -94,7 +94,7 @@ func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 		hardware := hardwareList[i]
 		if info, ok := result[hardware.HostName]; ok {
 			tp := info.(map[string]interface{})
-			toMap := structToMap(hardware)
+			toMap := structToMap(&hardware)
 			result[hardware.HostName] = mergeMaps(tp, toMap)
 		}
 	}
@@ -111,7 +111,7 @@ func tasksByType(res []Task) map[string]interface{} {
 			taskList = append(tt, task)
 			param[task.Task] = taskList
 		} else {
-			param[task.Task] = []Task{}
+			param[task.Task] = []Task{task}
 		}
 	}
 	return param
@@ -119,7 +119,7 @@ func tasksByType(res []Task) map[string]interface{} {
 
 func (sp *ShellParse) MsgNums() (interface{}, error) {
 	//data, err := sp.ExecCmd("lotus", `mpool pending | grep -a "Version" |wc -l`)
-	data, err := sp.ExecCmd("lotus", `mpool`,"pending",)
+	data, err := sp.ExecCmd("lotus", `mpool`, "pending", )
 	if err != nil {
 		return "", fmt.Errorf("exec mpool pending: %v \n", err)
 	}
@@ -158,8 +158,9 @@ func (sp *ShellParse) hardwareInfo(workers []WorkerInfo) ([]HardwareInfo, error)
 }
 
 func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
-	execInfo := fmt.Sprintf(`ssh -p 22521 root@%v "sensors&&uptime&&free -h&&df -h&&sar -n DEV 1 2&& iotop -bn1|head -n 2"`, w.IP)
-	data, err := sp.ExecCmd("bash", execInfo)
+	//execInfo := fmt.Sprintf(`root@%v "sensors&&uptime&&free -h&&df -h&&sar -n DEV 1 2&& iotop -bn1|head -n 2"`, w.IP)
+	execInfo := fmt.Sprintf(`root@%v`, w.IP)
+	data, err := sp.ExecCmd("ssh", execInfo,"sensors","&&","uptime","&&","free -h","&&","df -h","&&","sar","-n","DEV","1","2","&&","iotop","-bn1","|","head","-n","2")
 	hardwareInfo := HardwareInfo{}
 	if err != nil {
 		obj <- hardwareInfo
@@ -189,7 +190,7 @@ func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
 }
 
 func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
-	data, err := sp.ExecCmd("lotus-miner", "sealing","jobs")
+	data, err := sp.ExecCmd("lotus-miner", "sealing", "jobs")
 	if err != nil {
 		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
 	}
@@ -216,7 +217,7 @@ func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
 }
 
 func getHardwareInfo(line string) (Task, bool) {
-	arrs := strings.Split(line, " ")
+	arrs := strings.Fields(line)
 	if len(arrs) < 7 {
 		return Task{}, false
 	}
@@ -241,7 +242,7 @@ func (sp *ShellParse) ExecCmd(cmdName string, args ...string) (string, error) {
 }
 
 func (sp *ShellParse) GetPostBalance() (string, error) {
-	data, err := sp.ExecCmd("lotus-miner", "actor","control","list")
+	data, err := sp.ExecCmd("lotus-miner", "actor", "control", "list")
 	if err != nil {
 		return "", fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
 	}
@@ -272,7 +273,7 @@ func (sp *ShellParse) GetMinerInfo() (*MinerInfo, error) {
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(src, 1)
 	minerInfo.TotalSectors = getRegexValue(totalSectors)
 	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 1)
-	minerInfo.EffectiveSectors= getRegexValue(effectSectors)
+	minerInfo.EffectiveSectors = getRegexValue(effectSectors)
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
 	minerInfo.ErrorSectors = getRegexValue(errorsSectors)
 	recoverySectors := recoverySectorReg.FindAllStringSubmatch(src, 1)

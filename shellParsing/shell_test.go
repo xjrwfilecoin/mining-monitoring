@@ -266,10 +266,81 @@ func TestHardwareInfo(t *testing.T) {
 
 }
 
-type User struct {
-	Name string
-	Age  int
+
+
+
+
+
+
+func TestMemgy(t *testing.T){
+	tasks:=[]Task{
+		{
+			Id:"ddddd",
+			Sector:"1",
+			Worker:"dddd",
+			HostName:"worker01",
+			Task:"PC1",
+			State:"running",
+			Time:"1h52m",
+		},
+	}
+	hardwareInfo:=[]HardwareInfo{
+		{
+			HostName:"worker01",
+			CpuTemper  :"100",
+			CpuLoad     :"100",
+			GpuTemper   :"100",
+			GpuLoad     :"100",
+			UseMemory   :"100",
+			TotalMemory :"100",
+			UseDisk    :"100",
+			DiskR       :"100",
+			DiskW      :"100",
+			NetRW      :"100",
+		},
+	}
+	info := mergeWorkerInfo1(tasks, hardwareInfo)
+	fmt.Printf("result: %v \n",info)
 }
+
+
+func mergeWorkerInfo1(tasks []Task, hardwareList []HardwareInfo) interface{} {
+	// 根据 hostName分组
+	param := make(map[string][]Task)
+	for i := 0; i < len(tasks); i++ {
+		task := tasks[i]
+		if taskList, ok := param[task.HostName]; ok {
+			taskList = append(taskList, task)
+		} else {
+			param[task.HostName] = []Task{task}
+		}
+	}
+
+	result := make(map[string]interface{})
+	// 根据任务类型分组
+	for hostName, taskList := range param {
+		tk := hostName
+		param := tasksByType(taskList)
+		result[tk] = param
+	}
+
+	// 结合硬件信息
+	for i := 0; i < len(hardwareList); i++ {
+		hardware := hardwareList[i]
+		if info, ok := result[hardware.HostName]; ok {
+			tp := info.(map[string]interface{})
+			toMap := structToMap(&hardware)
+			result[hardware.HostName] = mergeMaps(tp, toMap)
+		}
+	}
+	return result
+}
+
+
+
+
+
+
 
 func TestShellParse(t *testing.T) {
 	user := MinerInfo{MinerId: "dddd",MinerBalance:"ddddd"}

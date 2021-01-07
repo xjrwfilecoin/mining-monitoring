@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"mining-monitoring/shellParsing"
 )
@@ -16,7 +17,12 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-	fmt.Printf("result: %v  \n", result)
+	bytes, err := json.Marshal(result)
+	if err!=nil{
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(string(bytes))
 }
 
 
