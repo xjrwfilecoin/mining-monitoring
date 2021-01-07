@@ -273,7 +273,7 @@ func TestHardwareInfo(t *testing.T) {
 
 
 
-func TestMemgy(t *testing.T){
+func TestWorkerInfo(t *testing.T){
 	tasks:=[]Task{
 		{
 			Id:"ddddd",
@@ -314,7 +314,7 @@ func TestMemgy(t *testing.T){
 	}
 	hardwareInfo:=[]HardwareInfo{
 		{
-			HostName:"worker01",
+			HostName: "worker01",
 			CpuTemper  :"100",
 			CpuLoad     :"100",
 			GpuTemper   :"100",

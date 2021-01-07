@@ -28,7 +28,7 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	minerInfoMap := structToMap(minerInfo)
+	minerInfoMap := structToMapByJson(minerInfo)
 
 	log.Debug("minerInfo: %v \n", minerInfo)
 
@@ -36,14 +36,13 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	minerInfoMap["PostBalance"] = postBalance
+	minerInfoMap["postBalance"] = postBalance
 	log.Debug("PostBalance: %v \n", postBalance)
 
 	msgNums, err := sp.MsgNums()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("messageInfo: ", msgNums)
 	minerInfoMap["messageNums"] = msgNums
 	log.Debug("msgNums: %v \n", msgNums)
 
@@ -51,7 +50,6 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("minerJobs: ", minerJobs)
 	log.Debug("minerJobs: %v \n", minerJobs)
 	hardwareInfo, err := sp.hardwareInfo(sp.Workers)
 	if err != nil {
@@ -59,7 +57,6 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	}
 	log.Debug("hardwareInfo: %v \n", hardwareInfo)
 
-	fmt.Println("hardwareInfo: ", hardwareInfo)
 	workerInfo := mergeWorkerInfo(minerJobs, hardwareInfo)
 	log.Debug("workerInfo: %v \n", workerInfo)
 

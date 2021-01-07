@@ -1,7 +1,11 @@
 package shellParsing
 
-import "reflect"
+import (
+	"encoding/json"
+	"reflect"
+)
 
+// 整理worker任务信息
 func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 	// 根据 hostName分组
 	mapByHostName := make(map[string][]Task)
@@ -41,11 +45,11 @@ func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 		result := make(map[string]interface{})
 		tq := taskQueue.(map[string]interface{})
 		for taskType, queue := range tq {
-			q1:=queue.([]Task)
+			q1 := queue.([]Task)
 			param := tasksByType(q1)
-			result[taskType]=param
+			result[taskType] = param
 		}
-		mapByTask[tHost] =result
+		mapByTask[tHost] = result
 
 	}
 
@@ -54,7 +58,7 @@ func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 		hardware := hardwareList[i]
 		if info, ok := mapByTask[hardware.HostName]; ok {
 			tp := info.(map[string]interface{})
-			toMap := structToMap(&hardware)
+			toMap := structToMapByJson(&hardware)
 			mapByTask[hardware.HostName] = mergeMaps(tp, toMap)
 		}
 	}
@@ -77,7 +81,20 @@ func tasksByType(res []Task) map[string]interface{} {
 	return param
 }
 
-func structToMap(obj interface{}) map[string]interface{} {
+func structToMapByJson(obj interface{}) map[string]interface{} {
+	m := make(map[string]interface{})
+	bytes, err := json.Marshal(obj)
+	if err != nil {
+		return m
+	}
+	err = json.Unmarshal(bytes, &m)
+	if err != nil {
+		return m
+	}
+	return m
+}
+
+func structToMapByReflect(obj interface{}) map[string]interface{} {
 	m := make(map[string]interface{})
 	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
 		return m
