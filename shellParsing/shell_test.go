@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -21,8 +23,6 @@ import (
 //var recoverySectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
 //var deletedSectorReg = regexp.MustCompile(`Removed: ([\d]*)`)
 //var failSectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
-
-
 
 var postSrc = `name       ID      key           use         balance                          
 owner      t0100   t3qxt533a...  other post  49899998.999888415326285699 FIL  
@@ -72,46 +72,45 @@ Sectors:
 func TestShellMinerInfo(t *testing.T) {
 
 	result := minerIdReg.FindString(src)
-	fmt.Println("minerId: ",result)
+	fmt.Println("MinerId: ", result)
 
 	minerBalance := minerBalanceReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("minerBalance:  ",minerBalance[0][1])
+	fmt.Println("minerBalance:  ", minerBalance[0][1])
 
 	postBalance := postBalanceReg.FindAllStringSubmatch(postSrc, 1)
-	fmt.Println("postBalance: ",postBalance[0][1])
+	fmt.Println("PostBalance: ", postBalance[0][1])
 
 	workerBalance := workerBalanceReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("workerBalance:  ",workerBalance[0][1])
+	fmt.Println("WorkerBalance:  ", workerBalance[0][1])
 
 	pledgeBalance := pledgeBalanceReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("pledgeBalance:  ",pledgeBalance[0][1])
+	fmt.Println("PledgeBalance:  ", pledgeBalance[0][1])
 
 	totalPower := totalPowerReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("totalPower: ",totalPower[0][1])
+	fmt.Println("totalPower: ", totalPower[0][1])
 
 	effectPower := effectPowerReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("effectPower: ",effectPower[0][1])
+	fmt.Println("effectPower: ", effectPower[0][1])
 
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("totalSectors: ",totalSectors[0][1])
+	fmt.Println("TotalSectors: ", totalSectors[0][1])
 
 	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("effectSectors: ",effectSectors[0][1])
+	fmt.Println("effectSectors: ", effectSectors[0][1])
 
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("errorsSectors: ",errorsSectors[0][1])
+	fmt.Println("errorsSectors: ", errorsSectors[0][1])
 
 	recoverySectors := recoverySectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("recoverySectors: ",recoverySectors[0][1])
+	fmt.Println("RecoverySectors: ", recoverySectors[0][1])
 
 	deletedSectors := deletedSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("deletedSectors: ",deletedSectors[0][1])
+	fmt.Println("DeletedSectors: ", deletedSectors[0][1])
 
 	failSectors := failSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("failSectors: ",failSectors[0][1])
+	fmt.Println("FailSectors: ", failSectors[0][1])
 
 }
-
 
 var jobsSrc = `build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
 localIP:  172.70.16.201
@@ -143,21 +142,39 @@ b6f7ef87  8362    0877ce65  ya_amd_node05  PC1   running      24m28.9s
 88571edc  8606    30219202  ya_amd_node10  PC1   running      24m8.8s
 13221e93  8473    b7f2929c  ya_amd_node06  PC1   running      23m51.2s
 `
-func TestWorkerJobs(t *testing.T){
+
+func TestWorkerJobs(t *testing.T) {
 
 	//result :=make(map[string]map[string]interface{})
-
 	reader := bufio.NewReader(bytes.NewBuffer([]byte(jobsSrc)))
+	var canParse bool
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil || io.EOF == err {
 			break
 		}
-		fmt.Println(line)
+		if !canParse && strings.HasPrefix(line, "ID") {
+			canParse = true
+			continue
+		}
+		arrs := strings.Fields(line)
+		if len(arrs) < 7 {
+			continue
+		}
+		task := Task{
+			Id:       arrs[0],
+			Sector:   arrs[1],
+			Worker:   arrs[2],
+			HostName: arrs[3],
+			Task:     arrs[4],
+			State:    arrs[5],
+			Time:     arrs[6],
+		}
+		fmt.Println(task)
 	}
 }
 
-var hardwareInfo =`power_meter-acpi-0
+var hardwareInfo = `power_meter-acpi-0
 Adapter: ACPI interface
 power1:      184.00 W  (interval =   1.00 s)
 
@@ -221,44 +238,54 @@ Average:           lo      0.00      0.00      0.00      0.00      0.00      0.0
 unable to set locale, falling back to the default locale
 Total DISK READ :       0.00 B/s | Total DISK WRITE :      27.47 M/s`
 
-
-
-
-func TestHardwareInfo(t *testing.T){
+func TestHardwareInfo(t *testing.T) {
 
 	cpuTemperature := cpuTemperatureReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("cpuTemperature: ",cpuTemperature[0][1])
+	fmt.Println("cpuTemperature: ", cpuTemperature[0][1])
 
 	cpuLoad := cpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("cpuLoad: ",cpuLoad[0][1])
+	fmt.Println("CpuLoad: ", cpuLoad[0][1])
 
-
-	//gpuLoad := gpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	//fmt.Println("gpuLoad: ",gpuLoad[0][1])
+	//GpuLoad := gpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
+	//fmt.Println("GpuLoad: ",GpuLoad[0][1])
 
 	memoryUsed := memoryUsedReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("memoryUsed: ",memoryUsed[0][2])
+	fmt.Println("memoryUsed: ", memoryUsed[0][2])
 
 	//memoryTotal := memoryTotalReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("memoryTotal: ",memoryUsed[0][1])
+	fmt.Println("memoryTotal: ", memoryUsed[0][1])
 
 	diskUsed := diskUsedRateReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("diskUsed: ",diskUsed[0][1])
+	fmt.Println("diskUsed: ", diskUsed[0][1])
 
 	diskRead := diskReadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("diskRead: ",diskRead[0][1])
+	fmt.Println("diskRead: ", diskRead[0][1])
 
 	diskWrite := diskWriteReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("diskWrite: ",diskWrite[0][1])
+	fmt.Println("diskWrite: ", diskWrite[0][1])
 
 }
 
-
-
-func TestShellParse(t *testing.T){
-	//shellParse, _ := NewShellParse("")
-
+type User struct {
+	Name string
+	Age  int
 }
 
+func TestShellParse(t *testing.T) {
+	user := MinerInfo{MinerId: "dddd",MinerBalance:"ddddd"}
+	result := test(&user)
+	fmt.Println(result)
+}
 
-
+func test(obj interface{}) map[string]interface{} {
+	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
+		return nil
+	}
+	elem := reflect.ValueOf(obj).Elem()
+	m := make(map[string]interface{})
+	relType := elem.Type()
+	for i := 0; i < relType.NumField(); i++ {
+		m[relType.Field(i).Name] = elem.Field(i).Interface()
+	}
+	return m
+}

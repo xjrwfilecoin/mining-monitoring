@@ -19,37 +19,16 @@ func (m *Manager) GetCurrentMinerInfo() interface{} {
 }
 
 func (m *Manager) DoShell() (interface{}, error) {
+	if e := recover(); e != nil {
+		log.Error("doShell error: %v ", e)
+	}
 	taskInfo, err := m.shellParse.getTaskInfo()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("minerInfo:  %v \n", taskInfo)
 	// todo
 	return taskInfo, nil
 
-}
-
-func (m *Manager) getEffectiveInfo(param map[string]interface{}) map[string]interface{} {
-	firstMap := make(map[string]interface{})
-	secondMap := make(map[string]interface{})
-	if len(param) > len(m.currentInfo) {
-		firstMap = param
-		secondMap = m.currentInfo
-	} else {
-		firstMap = m.currentInfo
-		secondMap = param
-	}
-	tmpMap := make(map[string]interface{})
-	for key, value := range firstMap {
-		tk := key
-		tv := value
-		// todo 深度
-		if v, ok := secondMap[tk]; !ok || v != tv {
-			tmpMap[tk] = tv
-		}
-	}
-	m.currentInfo = param
-	return tmpMap
 }
 
 func (m *Manager) Run(obj chan interface{}) {
@@ -84,7 +63,7 @@ func NewManager(path string) (*Manager, error) {
 
 	return &Manager{
 		currentInfo: map[string]interface{}{},
-		shellParse:  NewShellParse(),
+		shellParse:  NewShellParse(workers),
 		Workers:     workers,
 	}, nil
 }

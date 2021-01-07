@@ -6,7 +6,6 @@ import "regexp"
 
 var minerIdReg = regexp.MustCompile(` f[\d]* `)
 var minerBalanceReg = regexp.MustCompile(`Miner Balance:    ([\d]*.*[\d]*.*FIL)`)
-var postBalanceReg = regexp.MustCompile(`\.\.\.  post        ([\d]*.*[\d]*.*FIL)`)
 var workerBalanceReg = regexp.MustCompile(`Worker Balance:   ([\d]*.*[\d]*.*FIL)`)
 var pledgeBalanceReg = regexp.MustCompile(`Pledge:     ([\d]*.*[\d]*.*FIL)`)
 var effectPowerReg = regexp.MustCompile(`Power: ([\d]*.*[\d].*) /`)
@@ -17,6 +16,9 @@ var errorSectorReg = regexp.MustCompile(`FailedUnrecoverable: ([\d]*)`)
 var recoverySectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
 var deletedSectorReg = regexp.MustCompile(`Removed: ([\d]*)`)
 var failSectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
+
+// post
+var postBalanceReg = regexp.MustCompile(`\.\.\.  post        ([\d]*.*[\d]*.*FIL)`)
 
 
 // hardware info

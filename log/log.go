@@ -69,6 +69,9 @@ var Logger *logrus.Logger
 
 //MyLogicLogger 自定义logrus日志
 func MyLogicLogger(logPath string) (*logrus.Logger, error) {
+	if logPath==""{
+		logPath ="./"
+	}
 	logFilePath := logPath
 	logFileName := "logic.log"
 	fileName := path.Join(logFilePath, logFileName)
