@@ -134,8 +134,8 @@ func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
 	hardwareInfo.CpuLoad = getRegexValue(cpuLoad)
 
 	memoryUsed := memoryUsedReg.FindAllStringSubmatch(data, 1)
-	hardwareInfo.UseMemory = getRegexValue(memoryUsed)
-	hardwareInfo.TotalMemory = getRegexValueById(memoryUsed, 2)
+	hardwareInfo.UseMemory = getRegexValueById(memoryUsed,2)
+	hardwareInfo.TotalMemory = getRegexValueById(memoryUsed, 1)
 
 	diskUsed := diskUsedRateReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.UseDisk = getRegexValue(diskUsed)

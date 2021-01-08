@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+
+
+
+
+
+
+
+
+
 // 整理worker任务信息
 func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 	// 根据 hostName分组
@@ -55,15 +64,17 @@ func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 	}
 
 	// 结合硬件信息
+	var res []interface{}
 	for i := 0; i < len(hardwareList); i++ {
 		hardware := hardwareList[i]
 		if info, ok := mapByTask[hardware.HostName]; ok {
 			tp := info.(map[string]interface{})
 			toMap := structToMapByJson(&hardware)
 			mapByTask[hardware.HostName] = mergeMaps(tp, toMap)
+			res =append(res,mergeMaps(tp, toMap))
 		}
 	}
-	return mapByTask
+	return res
 }
 
 // 根据任务类型分组

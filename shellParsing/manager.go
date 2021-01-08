@@ -11,7 +11,7 @@ import (
 
 
 type Manager struct {
-	currentInfo map[string]interface{}
+	currentInfo interface{}
 	shellParse  *ShellParse
 	Workers     []WorkerInfo
 }
@@ -47,6 +47,7 @@ func (m *Manager) Run(obj chan interface{}) {
 				fmt.Printf("doShell error %v \n", err)
 				continue
 			}
+			m.currentInfo = result
 			obj <- result
 		default:
 

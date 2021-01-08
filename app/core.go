@@ -3,12 +3,14 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	socketio "github.com/googollee/go-socket.io"
 	"io/ioutil"
 	"mining-monitoring/log"
 	"mining-monitoring/model"
 	httpsvr "mining-monitoring/net/http"
 	"mining-monitoring/net/socket"
 	"mining-monitoring/processmanager"
+	"mining-monitoring/service"
 	"mining-monitoring/shellParsing"
 	"os"
 	"os/signal"
@@ -33,9 +35,16 @@ func Run(config, workerHost string) error {
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
-
+	// todo
 	// 注册socketIo路由
-	socket.Router(socket.SServer)
+	minerInfo := service.NewMinerInfoService(ShellManager)
+	socket.SServer.RegisterRouter(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
+	socket.SServer.RegisterRouter(DefaultNamespace, SubMinerInfo, func(s socketio.Conn, msg string) {
+		socket.SServer.JoinRoom(DefaultNamespace, DefaultRoom, s)
+		log.Info(s.ID(), s.LocalAddr(),"join room ", DefaultRoom)
+		s.Emit(SubMinerInfo, )
+	})
+
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, processmanager.SIGUSR1, processmanager.SIGUSR2)

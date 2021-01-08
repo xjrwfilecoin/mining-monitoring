@@ -1,4 +1,4 @@
-package socket
+package app
 
 const (
 	MinerInfo    = "minerInfo"
