@@ -3,7 +3,6 @@ package service
 import (
 	"github.com/googollee/go-socket.io"
 	"mining-monitoring/log"
-	"mining-monitoring/shellParsing"
 )
 
 type MinerInfoService struct {
@@ -11,7 +10,7 @@ type MinerInfoService struct {
 
 func (m *MinerInfoService) MinerInfo(s socketio.Conn, msg string) {
 	log.Debug(s.ID(), s.LocalAddr(), "get minerInfo: ", msg)
-	currentMinerInfo := shellParsing.MinerInfoManager.GetCurrentMinerInfo()
+	currentMinerInfo := "ddd"
 	// todo
 	log.Info("minerInfo result: ",currentMinerInfo)
 	s.Emit("minerInfo", currentMinerInfo)

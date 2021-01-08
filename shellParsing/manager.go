@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+
+
 type Manager struct {
 	currentInfo map[string]interface{}
 	shellParse  *ShellParse
@@ -20,7 +22,7 @@ func (m *Manager) GetCurrentMinerInfo() interface{} {
 
 func (m *Manager) DoShell() (interface{}, error) {
 	if e := recover(); e != nil {
-		log.Error("doShell error: %v ", e)
+		log.Error("doShell error: ", e)
 	}
 	taskInfo, err := m.shellParse.getTaskInfo()
 	if err != nil {
@@ -32,9 +34,9 @@ func (m *Manager) DoShell() (interface{}, error) {
 
 func (m *Manager) Run(obj chan interface{}) {
 	if e := recover(); e != nil {
-		log.Error("manager shell error %v \n", e)
+		log.Error("manager shell error ", e)
 	}
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {

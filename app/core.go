@@ -15,6 +15,8 @@ import (
 	"syscall"
 )
 
+var ShellManager *shellParsing.Manager
+
 func Run(config, workerHost string) error {
 	processmanager.Daemon()
 	processmanager.CheckPid("mining-monitoring")
@@ -27,7 +29,7 @@ func Run(config, workerHost string) error {
 		return err
 	}
 
-	shellManager, err := shellParsing.NewManager(workerHost)
+	ShellManager, err = shellParsing.NewManager(workerHost)
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
@@ -67,7 +69,13 @@ func Run(config, workerHost string) error {
 		for {
 			select {
 			case result := <-minerObjSign:
-				log.Debug("send subMinerInfo:  ", result)
+				fmt.Println()
+				bytes, err := json.Marshal(result)
+				if err!=nil{
+					continue
+				}
+				log.Info("send subMinerInfo:  ", string(bytes))
+				fmt.Println()
 				socket.BroadCaseMsg(result)
 			default:
 
@@ -76,7 +84,7 @@ func Run(config, workerHost string) error {
 	}()
 
 	// todo
-	go shellManager.Run(minerObjSign)
+	go ShellManager.Run(minerObjSign)
 
 	// todo db heartbeat
 	//// 初始化mongodb

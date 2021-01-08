@@ -23,3 +23,5 @@
 *.log
 
 mock/shell/shell
+
+mining-monitoring

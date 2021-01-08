@@ -30,35 +30,35 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	}
 	minerInfoMap := structToMapByJson(minerInfo)
 
-	log.Debug("minerInfo: %v \n", minerInfo)
+	log.Debug("minerInfo: ", *minerInfo)
 
 	postBalance, err := sp.GetPostBalance()
 	if err != nil {
 		return nil, err
 	}
 	minerInfoMap["postBalance"] = postBalance
-	log.Debug("PostBalance: %v \n", postBalance)
+	log.Debug("PostBalance: ", postBalance)
 
 	msgNums, err := sp.MsgNums()
 	if err != nil {
 		return nil, err
 	}
 	minerInfoMap["messageNums"] = msgNums
-	log.Debug("msgNums: %v \n", msgNums)
+	log.Debug("msgNums: ", msgNums)
 
 	minerJobs, err := sp.GetMinerJobs()
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("minerJobs: %v \n", minerJobs)
+	log.Debug("minerJobs: ", minerJobs)
 	hardwareInfo, err := sp.hardwareInfo(sp.Workers)
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("hardwareInfo: %v \n", hardwareInfo)
+	log.Debug("hardwareInfo: ", hardwareInfo)
 
 	workerInfo := mergeWorkerInfo(minerJobs, hardwareInfo)
-	log.Debug("workerInfo: %v \n", workerInfo)
+	log.Debug("workerInfo: ", workerInfo)
 
 	minerInfoMap["workerInfo"] = workerInfo
 	return minerInfoMap, nil
@@ -151,7 +151,7 @@ func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
 func getCpuTemper(data string) string {
 	tdieValue := cpuTemperatureRTdieReg.FindAllStringSubmatch(data, 1)
 	value := getRegexValue(tdieValue)
-	if value != "-" {
+	if value != "0" {
 		return value
 	}
 	coreValue := cpuTemperatureCoreReg.FindAllStringSubmatch(data, 1)

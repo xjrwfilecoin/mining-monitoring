@@ -122,14 +122,14 @@ func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
 
 func getRegexValue(src [][]string) string {
 	if len(src) == 0 || len(src[0]) == 0 {
-		return "-"
+		return "0"
 	}
 	return strings.ReplaceAll(src[0][1]," ","")
 }
 
 func getRegexValueById(src [][]string, id int) string {
 	if len(src) == 0 || len(src[0]) < id {
-		return "-"
+		return "0"
 	}
 	return strings.ReplaceAll(src[0][id]," ","")
 }
