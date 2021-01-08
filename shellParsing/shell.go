@@ -12,7 +12,6 @@ import (
 	"time"
 )
 
-
 type ShellParse struct {
 	Workers []WorkerInfo
 }
@@ -23,6 +22,7 @@ func NewShellParse(workers []WorkerInfo) *ShellParse {
 	}
 }
 
+// todo 隔离分开
 func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	minerInfo, err := sp.GetMinerInfo()
 	if err != nil {
@@ -64,10 +64,6 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	return minerInfoMap, nil
 }
 
-
-
-
-
 func (sp *ShellParse) MsgNums() (interface{}, error) {
 	data, err := sp.ExecCmd("lotus", `mpool`, "pending", )
 	if err != nil {
@@ -108,17 +104,31 @@ func (sp *ShellParse) hardwareInfo(workers []WorkerInfo) ([]HardwareInfo, error)
 }
 
 func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
-	//execInfo := fmt.Sprintf(`root@%v "sensors&&uptime&&free -h&&df -h&&sar -n DEV 1 2&& iotop -bn1|head -n 2"`, w.IP)
 	execInfo := fmt.Sprintf(`root@%v`, w.IP)
-	data, err := sp.ExecCmd("ssh", execInfo,"sensors","&&","uptime","&&","free -h","&&","df -h","&&","sar","-n","DEV","1","2","&&","iotop","-bn1","|","head","-n","2")
 	hardwareInfo := HardwareInfo{}
-	if err != nil {
-		obj <- hardwareInfo
-		return
+	var data string
+	var err error
+	if w.GPU == 0 {
+		data, err = sp.ExecCmd("ssh", execInfo, "sensors", "&&", "uptime", "&&", "free -h", "&&", "df -h", "&&", "sar", "-n", "DEV", "1", "2", "&&", "iotop", "-bn1", "|", "head", "-n", "2")
+		if err != nil {
+			obj <- hardwareInfo
+			return
+		}
+	} else {
+		data, err = sp.ExecCmd("ssh", execInfo, "sensors", "&&", "uptime", "&&", "free -h", "&&", "df -h", "&&", "sar", "-n", "DEV", "1", "2", "&&", "iotop", "-bn1", "|", "head", "-n", "2", "&&", "nvidia-smi")
+		if err != nil {
+			obj <- hardwareInfo
+			return
+		}
 	}
+
 	hardwareInfo.HostName = w.HostName
-	cpuTemperature := cpuTemperatureReg.FindAllStringSubmatch(data, 1)
-	hardwareInfo.CpuTemper = getRegexValue(cpuTemperature)
+	hardwareInfo.CpuTemper = getCpuTemper(data)
+	hardwareInfo.NetIO = getNetIO(data)
+
+	if w.GPU == 1 {
+		hardwareInfo.GpuInfo = getGraphicsCardInfo(data)
+	}
 
 	cpuLoad := cpuLoadReg.FindAllStringSubmatch(data, 1)
 	hardwareInfo.CpuLoad = getRegexValue(cpuLoad)
@@ -136,6 +146,77 @@ func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
 	hardwareInfo.DiskW = getRegexValue(diskWrite)
 	obj <- hardwareInfo
 	return
+}
+
+func getCpuTemper(data string) string {
+	tdieValue := cpuTemperatureRTdieReg.FindAllStringSubmatch(data, 1)
+	value := getRegexValue(tdieValue)
+	if value != "-" {
+		return value
+	}
+	coreValue := cpuTemperatureCoreReg.FindAllStringSubmatch(data, 1)
+	return getRegexValue(coreValue)
+}
+
+func getGraphicsCardInfo(data string) interface{} {
+	var graphCardList []GraphicsCardInfo
+	idAllStrs := gpuIdReg.FindAllStringSubmatch(data, -1)
+	gpInfoAllStrs := gpuInfoReg.FindAllStringSubmatch(data, -1)
+	if len(idAllStrs) < 1 || len(gpInfoAllStrs) < 1 {
+		return graphCardList
+	}
+	for i := 0; i < len(idAllStrs); i++ {
+		if len(idAllStrs[i]) < 1 || len(gpInfoAllStrs) < 1 {
+			continue
+		}
+		temp, used := getGpuInfo(gpInfoAllStrs[i][0])
+		graphCardList = append(graphCardList, GraphicsCardInfo{
+			Name: getGpuId(idAllStrs[i][0]),
+			Temp: temp,
+			Use:  used,
+		})
+	}
+	return graphCardList
+}
+
+func getGpuInfo(src string) (string, string) {
+	fields := strings.Fields(src)
+	if len(fields) < 15 {
+		return "-", "-"
+	}
+	return fields[2], fields[12]
+}
+
+func getGpuId(src string) string {
+	fields := strings.Fields(src)
+	if len(fields) < 12 {
+		return "-"
+	}
+	return fields[1]
+}
+
+func getNetIO(data string) interface{} {
+	allSubStr := netIOAverageReg.FindAllStringSubmatch(data, -1)
+	var NetIOes []NetCardIO
+	for i := 0; i < len(allSubStr); i++ {
+		if len(allSubStr[i]) == 0 {
+			continue
+		}
+		temp := allSubStr[i][0]
+		if strings.Contains(temp, "IFACE") {
+			continue
+		}
+		fields := strings.Fields(temp)
+		if len(fields) < 9 {
+			continue
+		}
+		NetIOes = append(NetIOes, NetCardIO{
+			Name: fields[1],
+			Rx:   fields[4],
+			TX:   fields[5],
+		})
+	}
+	return NetIOes
 }
 
 func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
@@ -156,7 +237,7 @@ func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
 			continue
 		}
 		if canParse {
-			if task, ok := getHardwareInfo(line); ok {
+			if task, ok := parseTaskByStr(line); ok {
 				taskList = append(taskList, task)
 			}
 
@@ -165,7 +246,7 @@ func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
 	return taskList, nil
 }
 
-func getHardwareInfo(line string) (Task, bool) {
+func parseTaskByStr(line string) (Task, bool) {
 	arrs := strings.Fields(line)
 	if len(arrs) < 7 {
 		return Task{}, false
@@ -205,31 +286,31 @@ func (sp *ShellParse) GetMinerInfo() (*MinerInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("exec lotus-miner info  %v \n", err)
 	}
-	src := string(data)
 	minerInfo := &MinerInfo{}
-	minerId := minerIdReg.FindString(src)
-	minerInfo.MinerId = minerId
-	minerBalance := minerBalanceReg.FindAllStringSubmatch(src, 1)
+	minerId := minerIdReg.FindAllStringSubmatch(data, 1)
+	minerInfo.MinerId = getRegexValue(minerId)
+	minerBalance := minerBalanceReg.FindAllStringSubmatch(data, 1)
 	minerInfo.MinerBalance = getRegexValue(minerBalance)
-	workerBalance := workerBalanceReg.FindAllStringSubmatch(src, 1)
+	workerBalance := workerBalanceReg.FindAllStringSubmatch(data, 1)
 	minerInfo.WorkerBalance = getRegexValue(workerBalance)
-	pledgeBalance := pledgeBalanceReg.FindAllStringSubmatch(src, 1)
+	pledgeBalance := pledgeBalanceReg.FindAllStringSubmatch(data, 1)
 	minerInfo.PledgeBalance = getRegexValue(pledgeBalance)
-	totalPower := totalPowerReg.FindAllStringSubmatch(src, 1)
+	totalPower := totalPowerReg.FindAllStringSubmatch(data, 1)
 	minerInfo.EffectivePower = getRegexValue(totalPower)
-	effectPower := effectPowerReg.FindAllStringSubmatch(src, 1)
+	effectPower := effectPowerReg.FindAllStringSubmatch(data, 1)
 	minerInfo.EffectivePower = getRegexValue(effectPower)
-	totalSectors := totalSectorsReg.FindAllStringSubmatch(src, 1)
+	totalSectors := totalSectorsReg.FindAllStringSubmatch(data, 1)
 	minerInfo.TotalSectors = getRegexValue(totalSectors)
-	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 1)
+	effectSectors := effectSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.EffectiveSectors = getRegexValue(effectSectors)
-	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
+	errorsSectors := errorSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.ErrorSectors = getRegexValue(errorsSectors)
-	recoverySectors := recoverySectorReg.FindAllStringSubmatch(src, 1)
+	recoverySectors := recoverySectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.RecoverySectors = getRegexValue(recoverySectors)
-	deletedSectors := deletedSectorReg.FindAllStringSubmatch(src, 1)
+	deletedSectors := deletedSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.DeletedSectors = getRegexValue(deletedSectors)
-	failSectors := failSectorReg.FindAllStringSubmatch(src, 1)
+	failSectors := failSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.FailSectors = getRegexValue(failSectors)
+	minerInfo.Timestamp = time.Now().Unix()
 	return minerInfo, nil
 }

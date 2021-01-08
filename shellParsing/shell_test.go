@@ -6,24 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 	"testing"
 )
-
-//var minerIdReg = regexp.MustCompile(` t[\d]* `)
-//var minerBalanceReg = regexp.MustCompile(`Miner Balance:    ([\d]*.*[\d]*.*FIL)`)
-//var postBalanceReg = regexp.MustCompile(`\.\.\.  post        ([\d]*.*[\d]*.*FIL)`)
-//var workerBalanceReg = regexp.MustCompile(`Worker Balance:   ([\d]*.*[\d]*.*FIL)`)
-//var pledgeBalanceReg = regexp.MustCompile(`Pledge:     ([\d]*.*[\d]*.*FIL)`)
-//var effectPowerReg = regexp.MustCompile(`Power: ([\d]*.*[\d].*) /`)
-//var totalPowerReg = regexp.MustCompile(`Committed: ([\d]*.*[\d].*)`)
-//var totalSectorsReg = regexp.MustCompile(`Total: ([\d]*)`)
-//var effectSectorReg = regexp.MustCompile(`Proving: ([\d]*)`)
-//var errorSectorReg = regexp.MustCompile(`FailedUnrecoverable: ([\d]*)`)
-//var recoverySectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
-//var deletedSectorReg = regexp.MustCompile(`Removed: ([\d]*)`)
-//var failSectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
 
 var postSrc = `name       ID      key           use         balance                          
 owner      t0100   t3qxt533a...  other post  49899998.999888415326285699 FIL  
@@ -72,44 +57,47 @@ Sectors:
 
 func TestShellMinerInfo(t *testing.T) {
 
-	result := minerIdReg.FindString(src)
-	fmt.Println("MinerId: ", result)
+	result := minerIdReg.FindAllStringSubmatch(src, 1)
+	fmt.Println("MinerId: ", getRegexValue(result))
 
 	minerBalance := minerBalanceReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("minerBalance:  ", minerBalance[0][1])
+	fmt.Println("minerBalance:  ", getRegexValue(minerBalance))
 
 	postBalance := postBalanceReg.FindAllStringSubmatch(postSrc, 1)
-	fmt.Println("PostBalance: ", postBalance[0][1])
+	fmt.Println("PostBalance: ", getRegexValue(postBalance))
 
 	workerBalance := workerBalanceReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("WorkerBalance:  ", workerBalance[0][1])
+	fmt.Println("WorkerBalance:  ", getRegexValue(workerBalance))
 
 	pledgeBalance := pledgeBalanceReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("PledgeBalance:  ", pledgeBalance[0][1])
+	fmt.Println("PledgeBalance:  ", getRegexValue(pledgeBalance))
 
 	totalPower := totalPowerReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("totalPower: ", totalPower[0][1])
+	fmt.Println("totalPower: ", getRegexValue(totalPower))
 
 	effectPower := effectPowerReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("effectPower: ", effectPower[0][1])
+	fmt.Println("effectPower: ", getRegexValue(effectPower))
 
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("TotalSectors: ", totalSectors[0][1])
+	fmt.Println("TotalSectors: ", getRegexValue(totalSectors))
 
 	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("effectSectors: ", effectSectors[0][1])
+	fmt.Println("effectSectors: ", getRegexValue(effectSectors))
 
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("errorsSectors: ", errorsSectors[0][1])
+	fmt.Println("errorsSectors: ", getRegexValue(errorsSectors))
 
 	recoverySectors := recoverySectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("RecoverySectors: ", recoverySectors[0][1])
+	fmt.Println("RecoverySectors: ", getRegexValue(recoverySectors))
 
 	deletedSectors := deletedSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("DeletedSectors: ", deletedSectors[0][1])
+	fmt.Println("DeletedSectors: ", getRegexValue(deletedSectors))
 
 	failSectors := failSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("FailSectors: ", failSectors[0][1])
+	fmt.Println("FailSectors: ", getRegexValue(failSectors))
+
+	preCommitFailed := preCommitFailedReg.FindAllStringSubmatch(src, 1)
+	fmt.Println("preCommitFailed: ", getRegexValue(preCommitFailed))
 
 }
 
@@ -179,6 +167,10 @@ var hardwareInfo = `power_meter-acpi-0
 Adapter: ACPI interface
 power1:      184.00 W  (interval =   1.00 s)
 
+k10temp-pci-00c3
+Adapter: PCI adapter
+Tdie:         +51.6°C  (high = +70.0°C)
+Tctl:         +51.6°C  
 coretemp-isa-0000
 Adapter: ISA adapter
 Package id 0:  +43.0 C  (high = +81.0 C, crit = +91.0 C)
@@ -237,134 +229,133 @@ Average:         eno2      0.00      0.00      0.00      0.00      0.00      0.0
 Average:    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
 Average:           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 unable to set locale, falling back to the default locale
-Total DISK READ :       0.00 B/s | Total DISK WRITE :      27.47 M/s`
+Total DISK READ :       0.00 B/s | Total DISK WRITE :      27.47 M/s
+Actual DISK READ:      57.36 M/s | Actual DISK WRITE:       0.00 B/s
+Fri Jan  8 11:46:08 2021
++-----------------------------------------------------------------------------+
+| NVIDIA-SMI 455.23.04    Driver Version: 455.23.04    CUDA Version: 11.1     |
+|-------------------------------+----------------------+----------------------+
+| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+|                               |                      |               MIG M. |
+|===============================+======================+======================|
+|   0  GeForce RTX 3080    Off  | 00000000:02:00.0 Off |                  N/A |
+|  0%   21C    P8    11W / 320W |      2MiB / 10018MiB |      90%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+|   1  GeForce RTX 3080    Off  | 00000000:C1:00.0 Off |                  N/A |
+|  0%   24C    P8     3W / 320W |      2MiB / 10018MiB |      0%      Default |
+|                               |                      |                  N/A |
++-------------------------------+----------------------+----------------------+
+
++-----------------------------------------------------------------------------+
+| Processes:                                                                  |
+|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+|        ID   ID                                                   Usage      |
+|=============================================================================|
+|  No running processes found                                                 |
+`
 
 func TestHardwareInfo(t *testing.T) {
 
-	cpuTemperature := cpuTemperatureReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("cpuTemperature: ", cpuTemperature[0][1])
+	cpuTemperature := getCpuTemper(hardwareInfo)
+	fmt.Println("cpuTemperature: ", cpuTemperature)
 
 	cpuLoad := cpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("CpuLoad: ", cpuLoad[0][1])
-
-	//GpuLoad := gpuLoadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	//fmt.Println("GpuLoad: ",GpuLoad[0][1])
+	fmt.Println("CpuLoad: ", getRegexValue(cpuLoad))
 
 	memoryUsed := memoryUsedReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("memoryUsed: ", memoryUsed[0][2])
-
-	//memoryTotal := memoryTotalReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("memoryTotal: ", memoryUsed[0][1])
+	fmt.Println("memoryUsed: ", getRegexValueById(memoryUsed, 2))
+	fmt.Println("memoryTotal: ", getRegexValueById(memoryUsed, 1))
 
 	diskUsed := diskUsedRateReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("diskUsed: ", diskUsed[0][1])
+	fmt.Println("diskUsed: ", getRegexValue(diskUsed))
 
 	diskRead := diskReadReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("diskRead: ", diskRead[0][1])
+	fmt.Println("diskRead: ", getRegexValue(diskRead))
 
 	diskWrite := diskWriteReg.FindAllStringSubmatch(hardwareInfo, 1)
-	fmt.Println("diskWrite: ", diskWrite[0][1])
+	fmt.Println("diskWrite: ", getRegexValue(diskWrite))
 
+	netIO := getNetIO(hardwareInfo)
+	fmt.Println("netIO: ", netIO)
+
+	graphicsCardInfo := getGraphicsCardInfo(hardwareInfo)
+	fmt.Println("graphicsCardInfo: ", graphicsCardInfo)
 }
 
-
-
-
-
-
-
-func TestWorkerInfo(t *testing.T){
-	tasks:=[]Task{
+func TestWorkerInfo(t *testing.T) {
+	tasks := []Task{
 		{
-			Id:"ddddd",
-			Sector:"1",
-			Worker:"dddd",
-			HostName:"worker01",
-			Task:"PC1",
-			State:"running",
-			Time:"1h52m",
+			Id:       "ddddd",
+			Sector:   "1",
+			Worker:   "dddd",
+			HostName: "worker01",
+			Task:     "PC1",
+			State:    "running",
+			Time:     "1h52m",
 		},
 		{
-			Id:"ddddd",
-			Sector:"2",
-			Worker:"dddd",
-			HostName:"worker01",
-			Task:"PC1",
-			State:"running",
-			Time:"1h52m",
+			Id:       "ddddd",
+			Sector:   "2",
+			Worker:   "dddd",
+			HostName: "worker01",
+			Task:     "PC1",
+			State:    "running",
+			Time:     "1h52m",
 		},
 		{
-			Id:"ddddd",
-			Sector:"3",
-			Worker:"dddd",
-			HostName:"worker01",
-			Task:"PC2",
-			State:"wait",
-			Time:"1h52m",
+			Id:       "ddddd",
+			Sector:   "3",
+			Worker:   "dddd",
+			HostName: "worker01",
+			Task:     "PC2",
+			State:    "wait",
+			Time:     "1h52m",
 		},
 		{
-			Id:"ddddd",
-			Sector:"3",
-			Worker:"dddd",
-			HostName:"worker02",
-			Task:"C2",
-			State:"running",
-			Time:"1h52m",
+			Id:       "ddddd",
+			Sector:   "3",
+			Worker:   "dddd",
+			HostName: "worker02",
+			Task:     "C2",
+			State:    "running",
+			Time:     "1h52m",
 		},
 	}
-	hardwareInfo:=[]HardwareInfo{
+	hardwareInfo := []HardwareInfo{
 		{
-			HostName: "worker01",
-			CpuTemper  :"100",
-			CpuLoad     :"100",
-			GpuTemper   :"100",
-			GpuLoad     :"100",
-			UseMemory   :"100",
-			TotalMemory :"100",
-			UseDisk    :"100",
-			DiskR       :"100",
-			DiskW      :"100",
-			NetRW      :"100",
+			HostName:    "worker01",
+			CpuTemper:   "100",
+			CpuLoad:     "100",
+			GpuTemper:   "100",
+			GpuLoad:     "100",
+			UseMemory:   "100",
+			TotalMemory: "100",
+			UseDisk:     "100",
+			DiskR:       "100",
+			DiskW:       "100",
+			NetIO:       "100",
 		},
 		{
-			HostName:"worker02",
-			CpuTemper  :"100",
-			CpuLoad     :"100",
-			GpuTemper   :"100",
-			GpuLoad     :"100",
-			UseMemory   :"100",
-			TotalMemory :"100",
-			UseDisk    :"100",
-			DiskR       :"100",
-			DiskW      :"100",
-			NetRW      :"100",
+			HostName:    "worker02",
+			CpuTemper:   "100",
+			CpuLoad:     "100",
+			GpuTemper:   "100",
+			GpuLoad:     "100",
+			UseMemory:   "100",
+			TotalMemory: "100",
+			UseDisk:     "100",
+			DiskR:       "100",
+			DiskW:       "100",
+			NetIO:       "100",
 		},
 	}
 	info := mergeWorkerInfo(tasks, hardwareInfo)
 	data, _ := json.MarshalIndent(info, "   ", "   ")
-	fmt.Printf("result: %v \n",string(data))
+	fmt.Printf("result: %v \n", string(data))
 }
-
-
-
-
-
 
 func TestShellParse(t *testing.T) {
-	user := MinerInfo{MinerId: "dddd",MinerBalance:"ddddd"}
-	result := test(&user)
-	fmt.Println(result)
-}
 
-func test(obj interface{}) map[string]interface{} {
-	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
-		return nil
-	}
-	elem := reflect.ValueOf(obj).Elem()
-	m := make(map[string]interface{})
-	relType := elem.Type()
-	for i := 0; i < relType.NumField(); i++ {
-		m[relType.Field(i).Name] = elem.Field(i).Interface()
-	}
-	return m
 }

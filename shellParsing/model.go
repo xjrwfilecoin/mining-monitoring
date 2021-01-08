@@ -3,22 +3,19 @@ package shellParsing
 type WorkerInfo struct {
 	HostName string
 	IP       string
+	GPU      int
 }
 
 type Workers []WorkerInfo
 
 type P map[string]interface{}
 
-
 type MinerInfo struct {
-	MinerId          string `json:"minerId"`          // MinerId
-	MinerBalance     string `json:"minerBalance"`     // miner余额
-	PostBalance      string `json:"postBalance"`      // post余额
-	WorkerBalance    string `json:"workerBalance"`    // worker余额
-	PledgeBalance    string `json:"pledgeBalance"`    // 抵押
-	TotalMessages    string `json:"totalMessages"`    // 消息总数
-	RawBytePower     string `json:"rawBytePower"`     // 字节算力
-	AdjustedPower    string `json:"adjustedPower"`    // 原值算力
+	MinerId       string `json:"minerId"`       // MinerId
+	MinerBalance  string `json:"minerBalance"`  // miner余额
+	WorkerBalance string `json:"workerBalance"` // worker余额
+	PledgeBalance string `json:"pledgeBalance"` // 抵押
+
 	EffectivePower   string `json:"effectivePower"`   // 有效算力
 	TotalSectors     string `json:"totalSectors"`     // 总扇区数
 	EffectiveSectors string `json:"effectiveSectors"` // 有效扇区
@@ -26,7 +23,8 @@ type MinerInfo struct {
 	RecoverySectors  string `json:"recoverySectors"`  // 恢复中扇区
 	DeletedSectors   string `json:"deletedSectors"`   // 删除扇区
 	FailSectors      string `json:"failSectors"`      // 失败扇区
-	Timestamp        string `json:"timestamp"`        // 此次统计时间
+	Timestamp        int64  `json:"timestamp"`        // 此次统计时间
+
 }
 
 // ID        Sector  Worker    Hostname       Task  State        Time
@@ -43,17 +41,16 @@ type Task struct {
 }
 
 type HardwareInfo struct {
-	HostName    string `json:"hostName"`
-	CpuTemper   string `json:"cpuTemper"` // cpu问题
-	CpuLoad     string `json:"cpuLoad"`   // cupu负载
-	GpuTemper   string `json:"gpuTemper"` // gpu温度
-	GpuLoad     string `json:"gpuLoad"`   // gpu负载
-	UseMemory   string `json:"useMemory"` // 内存信息
-	TotalMemory string `json:"totalMemory"`
-	UseDisk     string `json:"useDisk"` // 磁盘使用率
-	DiskR       string `json:"diskR"`   //磁盘IO
-	DiskW       string `json:"diskW"`   //磁盘IO
-	NetRW       string `json:"netRW"`   //网络IO
+	HostName    string      `json:"hostName"`
+	CpuTemper   string      `json:"cpuTemper"` // cpu问题
+	CpuLoad     string      `json:"cpuLoad"`   // cupu负载
+	UseMemory   string      `json:"useMemory"` // 内存信息
+	TotalMemory string      `json:"totalMemory"`
+	UseDisk     string      `json:"useDisk"` // 磁盘使用率
+	DiskR       string      `json:"diskR"`   //磁盘IO
+	DiskW       string      `json:"diskW"`   //磁盘IO
+	NetIO       interface{} `json:"netIO"`   //网络IO
+	GpuInfo     interface{} `json:"gpu"`
 }
 
 func (hd *HardwareInfo) IsValid() bool {
@@ -63,6 +60,18 @@ func (hd *HardwareInfo) IsValid() bool {
 type Sign struct {
 	Type string
 	Obj  interface{}
+}
+
+type NetCardIO struct {
+	Name string `json:"name"`
+	Rx   string `json:"rx"`
+	TX   string `json:"tx"`
+}
+
+type GraphicsCardInfo struct {
+	Name string `json:"name"`
+	Temp string `json:"temp"`
+	Use  string `json:"use"`
 }
 
 type Worker struct {
