@@ -10,11 +10,6 @@ import (
 
 
 
-
-
-
-
-
 // 整理worker任务信息
 func mergeWorkerInfo(tasks []Task, hardwareList []HardwareInfo) interface{} {
 	// 根据 hostName分组

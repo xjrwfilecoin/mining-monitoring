@@ -93,7 +93,7 @@ func Run(config, workerHost string) error {
 	}()
 
 	// todo
-	//go ShellManager.Run(minerObjSign)
+	go ShellManager.Run(minerObjSign)
 
 	// todo db heartbeat
 	//// 初始化mongodb
