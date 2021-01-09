@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 )
+
 // jobs "jobs":{"18":{"hostName":"worker01","id":"d7fd42c9","sector":"17","state":"running","task":"PC1","time":"17m48s","worker":"98c441ab"},}
 // hardwareInfo  hardwareInfo":{"worker01":{"cpuLoad":"14.73","cpuTemper":"+41.1°C","diskR":"906.67M/s","diskW":"163.63M/s","gpuInfo":{"0":{"name":"0","temp":"91C","use":"100%"}},"hostName":"worker01","netIO":{"eno1":{"name":"eno1","rx":"1.27","tx":"2.90"},"eno2":{"name":"eno2","rx":"0.00","tx":"0.00"},"enp2s0f0np0":{"name":"enp2s0f0np0","rx":"0.00","tx":"0.00"},"enp2s0f1np1":{"name":"enp2s0f1np1","rx":"0.00","tx":"0.00"},"lo":{"name":"lo","rx":"0.00","tx":"0.00"}},"totalMemory":"503G","useDisk":"40%","useMemory":"319G"}},
 // 根据 hostName 分组归纳信息
@@ -54,7 +55,7 @@ func ParseJobsInfo(jobs, workerHardwareInfo map[string]interface{}) interface{} 
 	for hostName, taskQueue := range mapByState {
 		tHost := hostName
 		result := make(map[string]interface{})
-		result["hostName"]=tHost
+		result["hostName"] = tHost
 		tq := taskQueue.(map[string]interface{})
 		for taskType, queue := range tq {
 			q1 := queue.([]Task)
@@ -296,4 +297,128 @@ func mapToTask(src map[string]interface{}) Task {
 		State:    src["state"].(string),
 		Time:     src["time"].(string),
 	}
+}
+
+// jobs "jobs":{"18":{"hostName":"worker01","id":"d7fd42c9","sector":"17","state":"running","task":"PC1","time":"17m48s","worker":"98c441ab"},}
+// hardwareInfo  hardwareInfo":{"worker01":{"cpuLoad":"14.73","cpuTemper":"+41.1°C","diskR":"906.67M/s","diskW":"163.63M/s","gpuInfo":{"0":{"name":"0","temp":"91C","use":"100%"}},"hostName":"worker01","netIO":{"eno1":{"name":"eno1","rx":"1.27","tx":"2.90"},"eno2":{"name":"eno2","rx":"0.00","tx":"0.00"},"enp2s0f0np0":{"name":"enp2s0f0np0","rx":"0.00","tx":"0.00"},"enp2s0f1np1":{"name":"enp2s0f1np1","rx":"0.00","tx":"0.00"},"lo":{"name":"lo","rx":"0.00","tx":"0.00"}},"totalMemory":"503G","useDisk":"40%","useMemory":"319G"}},
+// 根据 hostName 分组归纳信息
+// jobs task信息 ; workerHardwareInfo 硬件列表信息
+
+func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{} {
+
+	mapByHostName := mapByHostName(workerInfo)
+
+	mapByState := mapByState(mapByHostName)
+
+	mapByType := mapByType(mapByState)
+
+	var res []interface{}
+	if workerHardwareInfo == nil || len(workerHardwareInfo) == 0 {
+		for _, workerInfo := range mapByType {
+			res = append(res, workerInfo)
+		}
+		return res
+	}
+
+	// 结合硬件信息
+	for hostName, hardwareInfo := range workerHardwareInfo {
+		thInfo := hardwareInfo.(map[string]interface{})
+		if hInfo, ok := mapByType[hostName]; ok {
+			info := hInfo.(map[string]interface{})
+			param := mergeMaps(parseHardwareInfo(thInfo), info)
+			res = append(res, param)
+		}
+	}
+	return res
+}
+
+
+
+
+
+
+func mapByType(data map[string]interface{}) map[string]interface{} {
+	// 把按状态分组，在按照任务类型分组
+	mapByTask := make(map[string]interface{})
+	for hostName, taskQueues := range data {
+		result := make(map[string]interface{})
+		result["hostName"] = hostName
+		tq := taskQueues.(map[string]interface{})
+		for taskType, queue := range tq {
+			q1 := queue.([]map[string]interface{})
+			param := taskListByType(q1)
+			result[taskType] = param
+		}
+		mapByTask[hostName] = result
+	}
+	return mapByTask
+}
+
+func taskListByType(res []map[string]interface{}) map[string]interface{} {
+	param := make(map[string]interface{})
+	for i := 0; i < len(res); i++ {
+		task := res[i]
+		tType, ok := task["task"]
+		if !ok {
+			continue
+		}
+		if taskList, ok := param[tType.(string)]; ok {
+			tt := taskList.([]map[string]interface{})
+			taskList = append(tt, task)
+			param[tType.(string)] = taskList
+		} else {
+			param[tType.(string)] = []map[string]interface{}{task}
+		}
+	}
+	return param
+}
+
+func mapByState(data map[string]interface{}) map[string]interface{} {
+	// 根据任务运行状态分组
+	mapByState := make(map[string]interface{})
+	for host, taskList := range data {
+		taskMap := make(map[string]interface{})
+		var currentQueue, pendQueue []map[string]interface{}
+		taskList := taskList.([]map[string]interface{})
+		for i := 0; i < len(taskList); i++ {
+			task := taskList[i]
+			state, ok := task["state"]
+			if !ok {
+				continue
+			}
+
+			if state == "running" {
+				currentQueue = append(currentQueue, task)
+			} else {
+				pendQueue = append(pendQueue, task)
+			}
+		}
+		taskMap["currentQueue"] = currentQueue
+		taskMap["pendingQueue"] = pendQueue
+		mapByState[host] = taskMap
+	}
+	return mapByState
+}
+
+// 根据 hostName 进行分组
+func mapByHostName(jobs map[string]interface{}) map[string]interface{} {
+	mapByHostName := make(map[string]interface{})
+	if len(jobs) == 0 {
+		return nil
+	}
+	for _, task := range jobs {
+		sectorInfo := task.(map[string]interface{})
+		if _, ok := sectorInfo["hostName"]; !ok { // 判断扇区是否存在
+			continue
+		}
+		hostName := sectorInfo["hostName"].(string)
+		if taskList, ok := mapByHostName[hostName]; ok {
+			taskMap := taskList.([]map[string]interface{})
+			taskList = append(taskMap, sectorInfo)
+			mapByHostName[hostName] = taskList
+		} else {
+			mapByHostName[hostName] = []map[string]interface{}{sectorInfo}
+		}
+	}
+	return mapByHostName
 }
