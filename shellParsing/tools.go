@@ -52,6 +52,7 @@ func ParseJobsInfo(jobs, workerHardwareInfo map[string]interface{}) interface{} 
 	for hostName, taskQueue := range mapByState {
 		tHost := hostName
 		result := make(map[string]interface{})
+		result["hostName"]=tHost
 		tq := taskQueue.(map[string]interface{})
 		for taskType, queue := range tq {
 			q1 := queue.([]Task)
@@ -61,8 +62,14 @@ func ParseJobsInfo(jobs, workerHardwareInfo map[string]interface{}) interface{} 
 		mapByTask[tHost] = result
 	}
 
-	// 结合硬件信息
 	var res []interface{}
+	if workerHardwareInfo == nil || len(workerHardwareInfo) == 0 {
+		for _, tasks := range mapByTask {
+			res = append(res, tasks)
+		}
+		return res
+	}
+	// 结合硬件信息
 	for hostName, hardwareInfo := range workerHardwareInfo {
 		thInfo := hardwareInfo.(map[string]interface{})
 		if hInfo, ok := mapByTask[hostName]; ok {
@@ -226,10 +233,12 @@ func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
 			if _, ok := oldMap[key]; !ok {
 				result[key] = value
 			} else {
-				tempSrcMap := oldMap[key].(map[string]interface{})
-				tempDestMap := value.(map[string]interface{})
-				diffMap := DiffMap(tempSrcMap, tempDestMap)
-				result[key] = diffMap
+				tempOldMap := oldMap[key].(map[string]interface{})
+				tempNewMap := value.(map[string]interface{})
+				diffMap := DiffMap(tempOldMap, tempNewMap)
+				if diffMap != nil {
+					result[key] = diffMap
+				}
 			}
 		} else {
 			if tv, ok := oldMap[key]; !ok || value != tv {
@@ -237,20 +246,23 @@ func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
 			}
 		}
 	}
+	if len(result) == 0 {
+		return nil
+	}
 	return result
 }
 
-func DeleteMapNull(src map[string]interface{}) map[string]interface{} {
-	for key, value := range src {
+func DeleteMapNull(src *map[string]interface{}) *map[string]interface{} {
+	for key, value := range *src {
 		if value == nil {
-			delete(src, key)
+			delete(*src, key)
 		} else {
 			if reflect.TypeOf(value).Kind() == reflect.Map {
 				tValue := value.(map[string]interface{})
 				if len(tValue) == 0 {
-					delete(src, key)
+					delete(*src, key)
 				} else {
-					DeleteMapNull(tValue)
+					DeleteMapNull(&tValue)
 				}
 			}
 		}
