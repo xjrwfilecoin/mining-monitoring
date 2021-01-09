@@ -40,6 +40,8 @@ type Task struct {
 	Time     string `json:"time"`  // 耗时
 }
 
+
+
 type HardwareInfo struct {
 	HostName    string      `json:"hostName"`
 	CpuTemper   string      `json:"cpuTemper"` // cpu问题
