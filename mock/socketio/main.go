@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	socketio_client "github.com/zhouhui8915/go-socket.io-client"
 	"log"
 	"os"
@@ -25,31 +26,43 @@ func main() {
 		return
 	}
 
-	client.On("error", func() {
+	err = client.On("error", func() {
 		log.Printf("on error\n")
 	})
-	client.On("connection", func() {
+	err = client.On("connection", func() {
 		log.Printf("on connect\n")
 	})
 
-	client.On("minerInfo", func(msg string) {
+	err = client.On("minerInfo", func(msg string) {
 		log.Printf("on minerInfo:%v\n", msg)
 	})
 
-	client.On("subMinerInfo", func(msg string) {
+	err = client.On("subMinerInfo", func(msg string) {
 		log.Printf("on subMinerInfo:%v\n", msg)
 	})
 
-	client.On("disconnection", func() {
+	err = client.On("disconnection", func() {
 		log.Printf("on disconnect\n")
 	})
-
+	if err!=nil{
+		fmt.Println(err.Error())
+	}
+	err= client.Emit("minerInfo","getMinerInfo" )
+	if err!=nil{
+		fmt.Println(err.Error())
+	}
+	err=client.Emit("subMinerInfo", "get subMinerInfo result")
+	if err!=nil{
+		fmt.Println(err.Error())
+	}
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		data, _, _ := reader.ReadLine()
 		command := string(data)
-		client.Emit("minerInfo", command)
-		client.Emit("subMinerInfo", command)
+		err:= client.Emit("minerInfo", command)
+		if err!=nil{
+			fmt.Println(err.Error())
+		}
 		log.Printf("send message:%v\n", command)
 	}
 }

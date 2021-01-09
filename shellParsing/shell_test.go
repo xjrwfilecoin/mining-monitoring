@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 	"testing"
 )
@@ -353,10 +352,19 @@ func TestWorkerInfo(t *testing.T) {
 	fmt.Printf("result: %v \n", string(data))
 }
 
-func TestShellParse(t *testing.T) {
+func TestDiffMap(t *testing.T) {
 	oldMap := structToMapByReflect(&MinerInfo{})
 	oldMap["workerInfo"] = map[string]interface{}{
-
+			"worker02": map[string]interface{}{
+				"cpuLoad":"88",
+				"currentQueue": map[string]interface{}{
+						"PC1":map[string]interface{}{
+							"0":map[string]interface{}{
+									"state":"running",
+							},
+						},
+				},
+			},
 	}
 	newMap := structToMapByReflect(&MinerInfo{
 		MinerId:          "1",
@@ -373,24 +381,26 @@ func TestShellParse(t *testing.T) {
 		Timestamp:        0,
 	})
 	newMap["workerInfo"] = map[string]interface{}{
-
+		"worker02": map[string]interface{}{
+			"cpuLoad":"100",
+			"currentQueue": map[string]interface{}{
+				"PC1":map[string]interface{}{
+					"1":map[string]interface{}{
+						"state":"running",
+					},
+				},
+			},
+		},
 	}
 	diffMap := DiffMap(oldMap, newMap)
 	fmt.Println(diffMap)
 }
 
-func DiffMap(src, dest map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for key, value := range dest {
-		if reflect.TypeOf(value).Kind() == reflect.Map {
 
-		} else {
-			if tv, ok := src[key]; !ok || value != tv {
-				result[key] = value
-			}
-		}
-	}
-	return result
+
+func DiffMapNew(t *testing.T){
 
 }
+
+
 

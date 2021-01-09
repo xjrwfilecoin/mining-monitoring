@@ -41,8 +41,8 @@ func Run(config, workerHost string) error {
 	socket.SServer.RegisterRouter(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
 	socket.SServer.RegisterRouter(DefaultNamespace, SubMinerInfo, func(s socketio.Conn, msg string) {
 		socket.SServer.JoinRoom(DefaultNamespace, DefaultRoom, s)
-		log.Info(s.ID(), s.LocalAddr(),"join room ", DefaultRoom)
-		s.Emit(SubMinerInfo, )
+		log.Debug(s.ID(), s.LocalAddr(),"join room ", DefaultRoom)
+		s.Emit(SubMinerInfo, "info")
 	})
 
 
@@ -93,7 +93,7 @@ func Run(config, workerHost string) error {
 	}()
 
 	// todo
-	go ShellManager.Run(minerObjSign)
+	//go ShellManager.Run(minerObjSign)
 
 	// todo db heartbeat
 	//// 初始化mongodb

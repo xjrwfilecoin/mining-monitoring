@@ -131,6 +131,30 @@ func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
 	return result
 }
 
+// 比较求两个map得差集,
+func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range newMap {
+		if reflect.TypeOf(value).Kind() == reflect.Map {
+			if _, ok := oldMap[key]; !ok {
+				result[key] = value
+			} else {
+				tempSrcMap := oldMap[key].(map[string]interface{})
+				tempDestMap := value.(map[string]interface{})
+				diffMap := DiffMap(tempSrcMap, tempDestMap)
+				result[key] = diffMap
+			}
+		} else {
+			if tv, ok := oldMap[key]; !ok || value != tv {
+				result[key] = value
+			}
+		}
+	}
+	return result
+}
+
+
+
 func getRegexValue(src [][]string) string {
 	if len(src) == 0 || len(src[0]) == 0 {
 		return "0"

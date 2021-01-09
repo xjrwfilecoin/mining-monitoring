@@ -10,6 +10,7 @@ require (
 	github.com/go-gomail/gomail v0.0.0-20160411212932-81ebce5c23df
 	github.com/googollee/go-socket.io v1.4.4
 	github.com/gorilla/websocket v1.4.2
+	github.com/graarh/golang-socketio v0.0.0-20170510162725-2c44953b9b5f
 	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible

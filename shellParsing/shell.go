@@ -219,6 +219,9 @@ func getNetIO(data string) interface{} {
 	return NetIOes
 }
 
+
+
+
 func (sp *ShellParse) GetMinerJobs() ([]Task, error) {
 	data, err := sp.ExecCmd("lotus-miner", "sealing", "jobs")
 	if err != nil {
