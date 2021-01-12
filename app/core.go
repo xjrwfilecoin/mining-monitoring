@@ -14,6 +14,7 @@ import (
 	"mining-monitoring/shellParsing"
 	"os"
 	"os/signal"
+	"reflect"
 	"syscall"
 )
 
@@ -41,10 +42,9 @@ func Run(config, workerHost string) error {
 	socket.SServer.RegisterRouter(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
 	socket.SServer.RegisterRouter(DefaultNamespace, SubMinerInfo, func(s socketio.Conn, msg string) {
 		socket.SServer.JoinRoom(DefaultNamespace, DefaultRoom, s)
-		log.Debug(s.ID(), s.LocalAddr(),"join room ", DefaultRoom)
+		log.Debug(s.ID(), s.RemoteAddr(), "join room ", DefaultRoom)
 		s.Emit(SubMinerInfo, "info")
 	})
-
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, processmanager.SIGUSR1, processmanager.SIGUSR2)
@@ -78,14 +78,8 @@ func Run(config, workerHost string) error {
 		for {
 			select {
 			case result := <-minerObjSign:
-				fmt.Println()
-				bytes, err := json.Marshal(result)
-				if err!=nil{
-					continue
-				}
-				log.Info("send subMinerInfo:  ", string(bytes))
-				fmt.Println()
-				socket.BroadCaseMsg(result)
+				output := ParseMinerInfo(result)
+				socket.BroadCaseMsg(output)
 			default:
 
 			}
@@ -93,7 +87,7 @@ func Run(config, workerHost string) error {
 	}()
 
 	// todo
-	//go ShellManager.Run(minerObjSign)
+	go ShellManager.Run(minerObjSign)
 
 	// todo db heartbeat
 	//// 初始化mongodb
@@ -106,6 +100,25 @@ func Run(config, workerHost string) error {
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
 }
+
+
+func ParseMinerInfo(input interface{}) interface{} {
+	param := make(map[string]interface{})
+	if reflect.TypeOf(input).Kind() != reflect.Map {
+		return param
+	}
+	tempMap := input.(map[string]interface{})
+	jobs := tempMap["jobs"]
+	hardwareInfo := tempMap["hardwareInfo"]
+	tJobs := jobs.(map[string]interface{})
+	tHardware := hardwareInfo.(map[string]interface{})
+	workerInfo := MapParse(tJobs, tHardware)
+	delete(tempMap, "jobs")
+	delete(tempMap, "hardwareInfo")
+	tempMap["workerInfo"] = workerInfo
+	return tempMap
+}
+
 func ReadCfg(path string) (*model.RuntimeConfig, error) {
 	c := &model.RuntimeConfig{}
 	d, err := ioutil.ReadFile(path)
@@ -116,5 +129,6 @@ func ReadCfg(path string) (*model.RuntimeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("config info: %v \n", string(d))
 	return c, nil
 }

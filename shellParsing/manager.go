@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-
-
 type Manager struct {
 	currentInfo interface{}
 	shellParse  *ShellParse
@@ -36,6 +34,13 @@ func (m *Manager) Run(obj chan interface{}) {
 	if e := recover(); e != nil {
 		log.Error("manager shell error ", e)
 	}
+	result, err := m.DoShell()
+	if err != nil {
+		log.Error("manager do shell error: %v \n", err)
+	} else {
+		obj <- result
+	}
+
 	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 	for {

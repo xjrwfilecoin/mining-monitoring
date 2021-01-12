@@ -1,5 +1,7 @@
 package model
 
+
+
 type MinerInfo struct {
 	minerId          string       // minerId
 	MinerBalance     string       // miner余额

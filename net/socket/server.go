@@ -1,14 +1,16 @@
 package socket
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
 	"github.com/googollee/go-socket.io/engineio/transport"
 	"github.com/googollee/go-socket.io/engineio/transport/polling"
 	"github.com/googollee/go-socket.io/engineio/transport/websocket"
-	_ "github.com/googollee/go-socket.io/engineio/transport/websocket"
 	"mining-monitoring/log"
+	"mining-monitoring/model"
+	"mining-monitoring/utils"
 	"net/http"
 )
 
@@ -18,7 +20,13 @@ var SServer = NewServer()
 
 // todo
 func BroadCaseMsg(obj interface{}) {
-	SServer.broadcastMessage(DefaultNamespace, DefaultRoom, SubMinerInfo, obj)
+	cmd := model.ResponseCmd{Code: 1, Url: SubMinerInfo, Message: "success", Data: obj,}
+	bytes, err := json.Marshal(cmd)
+	if err!=nil{
+		log.Error(err.Error())
+	}
+	log.Info("broadCast: ", string(bytes))
+	SServer.broadcastMessage(DefaultNamespace, DefaultRoom, SubMinerInfo, cmd)
 }
 
 type Server struct {
@@ -32,8 +40,8 @@ func (ss *Server) GetServer() *socketio.Server {
 
 func (ss *Server) broadcastMessage(namespace, room, event string, obj interface{}) {
 	ok := ss.server.BroadcastToRoom(namespace, room, event, obj)
-	if !ok{
-		log.Error("broadcast msg fail ",obj)
+	if !ok {
+		log.Error("broadcast msg fail ", obj)
 	}
 }
 
@@ -61,7 +69,7 @@ func (ss *Server) Close() error {
 
 func (ss *Server) Run() error {
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
-		log.Debug("socketIO client connect ", s.ID(), s.LocalAddr(), )
+		log.Debug("socketIO client connect ", s.ID(), s.RemoteAddr(), )
 		s.Emit("message", "connected ")
 		return nil
 	})
@@ -75,6 +83,14 @@ func (ss *Server) Run() error {
 	})
 	return ss.server.Serve()
 
+}
+
+type GenId struct {
+}
+
+func (g GenId) NewID() string {
+
+	return utils.GetUUID()
 }
 
 func NewServer() (*Server) {
@@ -92,8 +108,8 @@ func NewServer() (*Server) {
 					},
 				},
 			},
-		},
-	)
+		})
+	//server, err := socketio.NewServer(nil)
 	if err != nil {
 		panic(fmt.Errorf("init socket-io server %v \n", err))
 	}

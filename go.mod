@@ -8,6 +8,7 @@ require (
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-gomail/gomail v0.0.0-20160411212932-81ebce5c23df
+	github.com/googollee/go-engine.io v1.4.3-0.20200220091802-9b2ab104b298
 	github.com/googollee/go-socket.io v1.4.4
 	github.com/gorilla/websocket v1.4.2
 	github.com/graarh/golang-socketio v0.0.0-20170510162725-2c44953b9b5f

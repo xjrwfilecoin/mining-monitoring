@@ -272,6 +272,37 @@ func getNetIO(data string) interface{} {
 	return NetIOes
 }
 
+
+
+
+
+func(sp *ShellParse)GetMinerWorkers()([]Worker,error){
+	data, err := sp.ExecCmd("lotus-miner", "sealing", "workers")
+	if err != nil {
+		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
+	}
+	reader := bufio.NewReader(bytes.NewBuffer([]byte(data)))
+	var res []Worker
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil || io.EOF == err {
+			break
+		}
+		if !strings.HasPrefix(line, "Worker") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields)<4{
+			continue
+		}
+		res =append(res,Worker{Hostname:fields[3],Id:fields[1]})
+	}
+	return res,nil
+}
+
+
+
+
 func (sp *ShellParse) GetMinerJobs() (map[string]interface{}, error) {
 	data, err := sp.ExecCmd("lotus-miner", "sealing", "jobs")
 	if err != nil {

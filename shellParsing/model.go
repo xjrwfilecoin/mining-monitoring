@@ -3,6 +3,7 @@ package shellParsing
 type WorkerInfo struct {
 	HostName string
 	IP       string
+	Id       string
 	GPU      int
 }
 
@@ -40,8 +41,6 @@ type Task struct {
 	Time     string `json:"time"`  // 耗时
 }
 
-
-
 type HardwareInfo struct {
 	HostName    string      `json:"hostName"`
 	CpuTemper   string      `json:"cpuTemper"` // cpu问题
@@ -77,8 +76,6 @@ type GraphicsCardInfo struct {
 }
 
 type Worker struct {
-	Hostname     string
-	CurrentQueue []Task // 当前任务
-	PendingQueue []Task // 队列中任务
-
+	Hostname string
+	Id       string
 }

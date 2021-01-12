@@ -427,3 +427,54 @@ func TestParseMinerInfo(t *testing.T) {
 }
 
 var testStr = `{"deletedSectors":"1","effectivePower":"0","effectiveSectors":"0","errorSectors":"0","failSectors":"0","hardwareInfo":{"worker01":{"cpuLoad":"14.73","cpuTemper":"+41.1°C","diskR":"906.67M/s","diskW":"163.63M/s","gpuInfo":{"0":{"name":"0","temp":"91C","use":"100%"}},"hostName":"worker01","netIO":{"eno1":{"name":"eno1","rx":"1.27","tx":"2.90"},"eno2":{"name":"eno2","rx":"0.00","tx":"0.00"},"enp2s0f0np0":{"name":"enp2s0f0np0","rx":"0.00","tx":"0.00"},"enp2s0f1np1":{"name":"enp2s0f1np1","rx":"0.00","tx":"0.00"},"lo":{"name":"lo","rx":"0.00","tx":"0.00"}},"totalMemory":"503G","useDisk":"40%","useMemory":"319G"}},"jobs":{"17":{"hostName":"worker01","id":"d7fd42c9","sector":"17","state":"running","task":"PC1","time":"17m48s","worker":"98c441ab"},"40":{"hostName":"worker01","id":"f5d60859","sector":"40","state":"running","task":"PC2","time":"20m17.7s","worker":"98c441ab"},"47":{"hostName":"worker01","id":"4fda8ea1","sector":"47","state":"running","task":"PC1","time":"13m17.7s","worker":"98c441ab"},"48":{"hostName":"worker01","id":"eba6ef90","sector":"48","state":"running","task":"PC1","time":"16m17.9s","worker":"98c441ab"},"49":{"hostName":"worker01","id":"d3283f2f","sector":"49","state":"running","task":"PC1","time":"19m18s","worker":"98c441ab"},"50":{"hostName":"worker01","id":"c1309585","sector":"50","state":"running","task":"PC1","time":"14m48s","worker":"98c441ab"},"51":{"hostName":"worker01","id":"53185af0","sector":"51","state":"running","task":"PC1","time":"11m47s","worker":"98c441ab"}},"messageNums":9,"minerBalance":"0","minerId":"t0114613","pledgeBalance":"0","postBalance":"0","recoverySectors":"0","timestamp":1610171829,"totalSectors":"52","workerBalance":"39.522FIL"}`
+
+var minerWorkers = `
+Worker 15331774-c8aa-4e5a-97e7-348f36af018b, host worker01
+	CPU:  [||||||||||||||||||||||||                                        ] 3/8 core(s) in use
+	RAM:  [||||||||||||||||||||||||||||                                    ] 44% 5.235 GiB/11.67 GiB
+	VMEM: [||||||||||||||||||||||||||||                                    ] 44% 5.235 GiB/11.67 GiB
+Worker 486cf314-5e60-4d62-bcc4-189ff4fc7bf8, host worker04
+	CPU:  [                                                                ] 0/8 core(s) in use
+	RAM:  [|||||||||||||||||||||||||||||                                   ] 46% 5.439 GiB/11.67 GiB
+	VMEM: [|||||||||||||||||||||||||||||                                   ] 46% 5.439 GiB/11.67 GiB
+Worker 74cdd5f7-08b1-4f0f-8e25-ef1b511743f6, host worker02
+	CPU:  [||||||||                                                        ] 1/8 core(s) in use
+	RAM:  [|||||||||||||||||||||||||||||                                   ] 45% 5.291 GiB/11.67 GiB
+	VMEM: [|||||||||||||||||||||||||||||                                   ] 45% 5.291 GiB/11.67 GiB
+Worker ae805414-0918-48fa-b17c-1212acebccd3, host worker03
+	CPU:  [                                                                ] 0/8 core(s) in use
+	RAM:  [|||||||||||||||||||||||||||||                                   ] 45% 5.314 GiB/11.67 GiB
+	VMEM: [|||||||||||||||||||||||||||||                                   ] 45% 5.314 GiB/11.67 GiB
+Worker d9dc590c-0131-4dd2-b9f6-43ffaed5d268, host worker06
+	CPU:  [                                                                ] 0/8 core(s) in use
+	RAM:  [||||||||||||||||||||||||||||||                                  ] 47% 5.555 GiB/11.67 GiB
+	VMEM: [||||||||||||||||||||||||||||||                                  ] 47% 5.555 GiB/11.67 GiB
+Worker edd1ea93-c135-43e4-aad6-202143607b15, host 
+	CPU:  [                                                                ] 0/8 core(s) in use
+	RAM:  [|||||||||||||||||||||||||||                                     ] 42% 4.964 GiB/11.67 GiB
+	VMEM: [|||||||||||||||||||||||||||                                     ] 42% 4.964 GiB/11.67 GiB
+Worker f1d9037a-7063-43ba-ab4b-65c65deacf0d, host worker05
+	CPU:  [                                                                ] 0/8 core(s) in use
+	RAM:  [||||||||||||||||||||||||||||||                                  ] 47% 5.553 GiB/11.67 GiB
+	VMEM: [||||||||||||||||||||||||||||||                                  ] 47% 5.553 GiB/11.67 GiB
+`
+
+func TestMinerWorkers(t *testing.T) {
+	reader := bufio.NewReader(bytes.NewBuffer([]byte(minerWorkers)))
+	var res []Worker
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil || io.EOF == err {
+			break
+		}
+		if !strings.HasPrefix(line, "Worker") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields)<4{
+			continue
+		}
+		res =append(res,Worker{Hostname:fields[3],Id:fields[1]})
+	}
+	fmt.Println(res)
+}

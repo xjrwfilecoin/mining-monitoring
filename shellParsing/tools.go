@@ -323,19 +323,16 @@ func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{}
 	// 结合硬件信息
 	for hostName, hardwareInfo := range workerHardwareInfo {
 		thInfo := hardwareInfo.(map[string]interface{})
-		if hInfo, ok := mapByType[hostName]; ok {
+		if hInfo, ok := mapByType[hostName]; ok { // jobs 中存在的主机在更新设备硬件信息
 			info := hInfo.(map[string]interface{})
 			param := mergeMaps(parseHardwareInfo(thInfo), info)
 			res = append(res, param)
+		} else {
+			res = append(res, mergeMaps(thInfo))
 		}
 	}
 	return res
 }
-
-
-
-
-
 
 func mapByType(data map[string]interface{}) map[string]interface{} {
 	// 把按状态分组，在按照任务类型分组

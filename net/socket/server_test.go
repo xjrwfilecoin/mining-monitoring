@@ -50,17 +50,7 @@ func TestServer02(t *testing.T){
 
 
 func TestServer01(t *testing.T){
-	server, err := NewServer()
-	if err!=nil{
-		panic(err)
-	}
-	defer server.Close()
-	go func() {
-		_ = server.Run()
-	}()
 
-	http.Handle("/socket.io/", server.server)
-	log.Fatal(http.ListenAndServe("0.0.0.0:7070", nil))
 }
 
 

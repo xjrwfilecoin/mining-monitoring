@@ -8,7 +8,7 @@
 <body>
 <h2>Hello World</h2>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.4/socket.io.js"></script>
 
 
 <script>
@@ -16,14 +16,13 @@
         transports: ['websocket'],
         reconnection: false
     });
-    socket.on('connect', () => {
-        console.log("connected")
-    });
 
-    socket.emit('minerInfo', 'tobi', (data) => {
-        console.log(data); // data will be 'woot'
-    });
 
+    setTimeout("changeState()",3000);
+    function changeState(){
+        console.log("info")
+        socket.emit("minerInfo", "world");
+    }
 
 </script>
 </body>
