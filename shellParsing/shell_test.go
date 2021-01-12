@@ -163,97 +163,78 @@ func TestWorkerJobs(t *testing.T) {
 	}
 }
 
-var hardwareInfo = `power_meter-acpi-0
-Adapter: ACPI interface
-power1:      184.00 W  (interval =   1.00 s)
+var hardwareInfo = `bnxt_en-pci-0201
+Adapter: PCI adapter
+temp1:        +54.0°C  
 
 k10temp-pci-00c3
 Adapter: PCI adapter
-Tdie:         +51.6°C  (high = +70.0°C)
-Tctl:         +51.6°C  
-coretemp-isa-0000
-Adapter: ISA adapter
-Package id 0:  +43.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 0:        +42.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 1:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 2:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 3:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 4:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 5:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 6:        +38.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 7:        +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 8:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 9:        +41.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 10:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 11:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 12:       +41.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 13:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 14:       +42.0 C  (high = +81.0 C, crit = +91.0 C)
-Core 15:       +40.0 C  (high = +81.0 C, crit = +91.0 C)
+Tdie:         +26.5°C  (high = +70.0°C)
+Tctl:         +26.5°C  
 
- 11:24:15 up 5 days, 21:51,  1 user,  load average: 20.45, 17.81, 17.44
+bnxt_en-pci-0200
+Adapter: PCI adapter
+temp1:        +54.0°C  
+
+ 03:58:55 up 5 days, 19:04,  4 users,  load average: 0.62, 2.75, 3.62
               total        used        free      shared  buff/cache   available
-Mem:           251G        101G        1.9G         18M        147G        148G
-Swap:            0B          0B          0B
-Filesystem               Size  Used Avail Use% Mounted on
-devtmpfs                 126G     0  126G   0% /dev
-tmpfs                    126G     0  126G   0% /dev/shm
-tmpfs                    126G   19M  126G   1% /run
-tmpfs                    126G     0  126G   0% /sys/fs/cgroup
-/dev/mapper/centos-root  372G  6.5G  365G   2% /
-/dev/sda2               1014M  147M  868M  15% /boot
-/dev/sda1                200M   12M  189M   6% /boot/efi
-/dev/md127                51T  592G   51T   2% /opt/hdd_pool
-tmpfs                     26G     0   26G   0% /run/user/1000
-tmpfs                     26G     0   26G   0% /run/user/0
-Linux 3.10.0-1127.el7.x86_64 (localhost.localdomain)    01/05/21        _x86_64_        (32 CPU)
+Mem:           503G        988M        482G         76K         20G        498G
+Swap:          8.0G         63M        7.9G
+Filesystem      Size  Used Avail Use% Mounted on
+udev            252G     0  252G   0% /dev
+tmpfs            51G  2.3M   51G   1% /run
+/dev/nvme0n1p2  1.5T  1.2T  221G  85% /
+tmpfs           252G     0  252G   0% /dev/shm
+tmpfs           5.0M  4.0K  5.0M   1% /run/lock
+tmpfs           252G     0  252G   0% /sys/fs/cgroup
+/dev/nvme0n1p1  511M  6.1M  505M   2% /boot/efi
+tmpfs            51G     0   51G   0% /run/user/0
+/dev/md126       59T   60G   59T   1% /opt/hdd_pool
+Linux 5.4.0-59-generic (worker01) 	01/12/21 	_x86_64_	(48 CPU)
 
-11:24:15        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
-11:24:16    enp180s0f0      5.00      0.00      0.29      0.00      0.00      0.00      0.00
-11:24:16         eno1  44111.00  44003.00  28076.70   7590.19      0.00      0.00      0.00
-11:24:16         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00
-11:24:16    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
-11:24:16           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:55        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+03:58:56    enp2s0f0np0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:56         eno1      8.00     10.00      0.72      2.48      0.00      0.00      0.00      0.00
+03:58:56         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:56           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:56    enp2s0f1np1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 
-11:24:16        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
-11:24:17    enp180s0f0      5.00      0.00      0.29      0.00      0.00      0.00      0.00
-11:24:17         eno1  86274.00  86230.00  54972.77  14884.79      0.00      0.00      0.00
-11:24:17         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00
-11:24:17    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
-11:24:17           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:56        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+03:58:57    enp2s0f0np0      1.00      0.00      0.12      0.00      0.00      0.00      1.00      0.00
+03:58:57         eno1      4.00      3.00      0.26      0.95      0.00      0.00      0.00      0.00
+03:58:57         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:57           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+03:58:57    enp2s0f1np1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 
-Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s
-Average:    enp180s0f0      5.00      0.00      0.29      0.00      0.00      0.00      0.00
-Average:         eno1  65192.50  65116.50  41524.73  11237.49      0.00      0.00      0.00
-Average:         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00
-Average:    enp180s0f1      5.00      0.00      0.29      0.00      0.00      0.00      0.00
-Average:           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00
-unable to set locale, falling back to the default locale
-Total DISK READ :       0.00 B/s | Total DISK WRITE :      27.47 M/s
-Actual DISK READ:      57.36 M/s | Actual DISK WRITE:       0.00 B/s
-Fri Jan  8 11:46:08 2021
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:    enp2s0f0np0      0.50      0.00      0.06      0.00      0.00      0.00      0.50      0.00
+Average:         eno1      6.00      6.50      0.49      1.72      0.00      0.00      0.00      0.00
+Average:         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:    enp2s0f1np1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Total DISK READ :       0.00 B/s | Total DISK WRITE :    1242.27 K/s
+Actual DISK READ:       0.00 B/s | Actual DISK WRITE:      22.53 M/s
+Tue Jan 12 03:58:58 2021       
 +-----------------------------------------------------------------------------+
-| NVIDIA-SMI 455.23.04    Driver Version: 455.23.04    CUDA Version: 11.1     |
+| NVIDIA-SMI 455.45.01    Driver Version: 455.45.01    CUDA Version: 11.1     |
 |-------------------------------+----------------------+----------------------+
 | GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
 | Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
 |                               |                      |               MIG M. |
 |===============================+======================+======================|
-|   0  GeForce RTX 3080    Off  | 00000000:02:00.0 Off |                  N/A |
-|  0%   21C    P8    11W / 320W |      2MiB / 10018MiB |      90%      Default |
+|   0  GeForce RTX 306...  Off  | 00000000:C4:00.0 Off |                  N/A |
+|  0%   36C    P0    26W / 200W |      0MiB /  7982MiB |      0%      Default |
 |                               |                      |                  N/A |
 +-------------------------------+----------------------+----------------------+
-|   1  GeForce RTX 3080    Off  | 00000000:C1:00.0 Off |                  N/A |
-|  0%   24C    P8     3W / 320W |      2MiB / 10018MiB |      0%      Default |
-|                               |                      |                  N/A |
-+-------------------------------+----------------------+----------------------+
-
+                                                                               
 +-----------------------------------------------------------------------------+
 | Processes:                                                                  |
 |  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
 |        ID   ID                                                   Usage      |
 |=============================================================================|
 |  No running processes found                                                 |
++-----------------------------------------------------------------------------+
+
 `
 
 func TestHardwareInfo(t *testing.T) {

@@ -96,6 +96,8 @@ func TestSocketIOClient(t *testing.T){
 		return
 	}
 
+	client.Emit("minerInfo",`{"uri":"minerInfo","body":{"minerId":"t00"},"msgId":"ddddddd"}`)
+
 	client.On("error", func() {
 		log.Printf("on error\n")
 	})

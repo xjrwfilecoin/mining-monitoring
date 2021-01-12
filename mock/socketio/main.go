@@ -47,7 +47,7 @@ func main() {
 	if err!=nil{
 		fmt.Println(err.Error())
 	}
-	err= client.Emit("minerInfo","getMinerInfo" )
+	err= client.Emit("minerInfo",`{"uri":"minerInfo","body":{"minerId":"t00"},"msgId":"ddddddd"}` )
 	if err!=nil{
 		fmt.Println(err.Error())
 	}

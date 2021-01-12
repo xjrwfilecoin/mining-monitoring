@@ -22,7 +22,7 @@ var SServer = NewServer()
 func BroadCaseMsg(obj interface{}) {
 	cmd := model.ResponseCmd{Code: 1, Url: SubMinerInfo, Message: "success", Data: obj,}
 	bytes, err := json.Marshal(cmd)
-	if err!=nil{
+	if err != nil {
 		log.Error(err.Error())
 	}
 	log.Info("broadCast: ", string(bytes))
@@ -43,6 +43,34 @@ func (ss *Server) broadcastMessage(namespace, room, event string, obj interface{
 	if !ok {
 		log.Error("broadcast msg fail ", obj)
 	}
+}
+
+func (ss *Server) RegisterRouterV1(namespace, event string, fn func(c *Context)) {
+	if namespace == "" {
+		namespace = "/"
+	}
+	if event == "" {
+		panic(fmt.Errorf("socketIo event is empty"))
+	}
+
+	ss.server.OnEvent(namespace, event, func(s socketio.Conn, data string) {
+		log.Debug("client request: ", s.ID(), s.RemoteAddr(), data)
+		uri := utils.GetJsonValue(data, "uri")
+		event := utils.GetJsonValue(data, "event")
+		body := utils.GetJsonValue(data, "body")
+		msgId := utils.GetJsonValue(data, "msgId")
+		if (uri == "" && event == "") || msgId == "" {
+			s.Emit(event, NewFailResp("Uri or MsgId is empty"))
+		} else {
+			tempUri := uri
+			if uri == "" {
+				tempUri = event
+			}
+			context := NewContext(s, tempUri, msgId, body)
+			fn(context)
+		}
+
+	})
 }
 
 func (ss *Server) RegisterRouter(namespace, event string, fn func(s socketio.Conn, msg string)) {

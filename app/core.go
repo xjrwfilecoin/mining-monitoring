@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	socketio "github.com/googollee/go-socket.io"
 	"io/ioutil"
 	"mining-monitoring/log"
 	"mining-monitoring/model"
@@ -39,11 +38,11 @@ func Run(config, workerHost string) error {
 	// todo
 	// 注册socketIo路由
 	minerInfo := service.NewMinerInfoService(ShellManager)
-	socket.SServer.RegisterRouter(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
-	socket.SServer.RegisterRouter(DefaultNamespace, SubMinerInfo, func(s socketio.Conn, msg string) {
-		socket.SServer.JoinRoom(DefaultNamespace, DefaultRoom, s)
-		log.Debug(s.ID(), s.RemoteAddr(), "join room ", DefaultRoom)
-		s.Emit(SubMinerInfo, "info")
+	socket.SServer.RegisterRouterV1(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
+	socket.SServer.RegisterRouterV1(DefaultNamespace, SubMinerInfo, func(c *socket.Context) {
+		socket.SServer.JoinRoom(DefaultNamespace, DefaultRoom, c.Conn)
+		log.Debug("join room ", DefaultRoom)
+		c.SuccessResp(nil)
 	})
 
 	c := make(chan os.Signal)
@@ -100,7 +99,6 @@ func Run(config, workerHost string) error {
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
 }
-
 
 func ParseMinerInfo(input interface{}) interface{} {
 	param := make(map[string]interface{})

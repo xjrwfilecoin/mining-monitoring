@@ -21,7 +21,7 @@ var failSectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
 var preCommitFailedReg = regexp.MustCompile(`PreCommitFailed: ([\d]*)`)
 
 // post
-var postBalanceReg = regexp.MustCompile(`\.\.\.[\s]*post        ([\d]*.*[\d]*.*FIL)`)
+var postBalanceReg = regexp.MustCompile(`\.\.\.[\s]*post[\s]*([\d]*.*[\d]*.*FIL)`)
 
 // hardware info
 var cpuTemperatureRTdieReg = regexp.MustCompile(`Tdie:[\s]*(.*[\d]*.*[\d]*.*C) `)
@@ -35,7 +35,9 @@ var gpuInfoReg = regexp.MustCompile(`\|(.*)Default \|`)
 
 
 var cpuLoadReg = regexp.MustCompile(`load average: ([\d]*.[\d]*),`)
-var memoryUsedReg = regexp.MustCompile(`Mem:           ([\d]*G)        ([\d]*G)`)
+
+var memoryUsedReg = regexp.MustCompile(`Mem:[\s]*([\d]*[GM])[\s]*([\d]*[GM])`)
+
 var diskUsedRateReg = regexp.MustCompile(`([\d]*.[\d]*%) /opt/hdd_pool`)
 var diskReadReg = regexp.MustCompile(`Actual DISK READ:[\s]*([\d]*.*[\d]*.*\/s) \|`)
 var diskWriteReg = regexp.MustCompile(`Actual DISK WRITE:[\s]*([\d]*.*[\d]*.*\/s)`)

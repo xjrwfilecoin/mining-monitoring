@@ -1,7 +1,7 @@
 package service
 
-import socketio "github.com/googollee/go-socket.io"
+import "mining-monitoring/net/socket"
 
 type IMinerInfo interface {
-	MinerInfo(s socketio.Conn, msg string)
+	MinerInfo(c *socket.Context)
 }

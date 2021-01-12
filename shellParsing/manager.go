@@ -9,7 +9,7 @@ import (
 )
 
 type Manager struct {
-	currentInfo interface{}
+	currentInfo map[string]interface{}
 	shellParse  *ShellParse
 	Workers     []WorkerInfo
 }
@@ -18,7 +18,7 @@ func (m *Manager) GetCurrentMinerInfo() interface{} {
 	return m.currentInfo
 }
 
-func (m *Manager) DoShell() (interface{}, error) {
+func (m *Manager) DoShell() (map[string]interface{}, error) {
 	if e := recover(); e != nil {
 		log.Error("doShell error: ", e)
 	}
@@ -38,6 +38,7 @@ func (m *Manager) Run(obj chan interface{}) {
 	if err != nil {
 		log.Error("manager do shell error: %v \n", err)
 	} else {
+		m.currentInfo = result
 		obj <- result
 	}
 
