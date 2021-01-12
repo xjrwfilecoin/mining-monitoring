@@ -1,7 +1,7 @@
 package config
 
 
-const FilecoinPrecision = uint64(1_000_000_000_000_000_000)
+
 
 const SysTimefrom = "2006-01-02 15:04:05"
 

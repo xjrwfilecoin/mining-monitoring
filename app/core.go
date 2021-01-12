@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"mining-monitoring/config"
 	"mining-monitoring/log"
 	"mining-monitoring/model"
 	httpsvr "mining-monitoring/net/http"
@@ -19,10 +20,10 @@ import (
 
 var ShellManager *shellParsing.Manager
 
-func Run(config, workerHost string) error {
+func Run(cfgPath, workerHost string) error {
 	processmanager.Daemon()
 	processmanager.CheckPid("mining-monitoring")
-	runtimeConfig, err := ReadCfg(config)
+	runtimeConfig, err := ReadCfg(cfgPath)
 	if err != nil {
 		return err
 	}
@@ -35,15 +36,11 @@ func Run(config, workerHost string) error {
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
-	// todo
+
 	// 注册socketIo路由
-	minerInfo := service.NewMinerInfoService(ShellManager)
-	socket.SServer.RegisterRouterV1(DefaultNamespace, MinerInfo, minerInfo.MinerInfo)
-	socket.SServer.RegisterRouterV1(DefaultNamespace, SubMinerInfo, func(c *socket.Context) {
-		socket.SServer.JoinRoom(DefaultNamespace, DefaultRoom, c.Conn)
-		log.Debug("join room ", DefaultRoom)
-		c.SuccessResp(nil)
-	})
+	minerInfo := service.NewMinerInfoService(ShellManager, socket.SServer)
+	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.MinerInfo, minerInfo.MinerInfo)
+	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.SubMinerInfo, minerInfo.SuMinerInfo)
 
 	c := make(chan os.Signal)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, processmanager.SIGUSR1, processmanager.SIGUSR2)
@@ -78,7 +75,7 @@ func Run(config, workerHost string) error {
 			select {
 			case result := <-minerObjSign:
 				output := ParseMinerInfo(result)
-				socket.BroadCaseMsg(output)
+				socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, output)
 			default:
 
 			}

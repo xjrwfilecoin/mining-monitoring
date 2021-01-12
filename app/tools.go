@@ -1,13 +1,5 @@
 package app
 
-const (
-	MinerInfo    = "minerInfo"
-	SubMinerInfo = "subMinerInfo"
-)
-const (
-	DefaultNamespace = "/"
-	DefaultRoom      = "miner-info"
-)
 
 
 func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{} {

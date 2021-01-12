@@ -9,24 +9,22 @@ import (
 	"github.com/googollee/go-socket.io/engineio/transport/polling"
 	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 	"mining-monitoring/log"
-	"mining-monitoring/model"
 	"mining-monitoring/utils"
 	"net/http"
 )
 
-// todo 通用
 
 var SServer = NewServer()
 
-// todo
-func BroadCaseMsg(obj interface{}) {
-	cmd := model.ResponseCmd{Code: 1, Url: SubMinerInfo, Message: "success", Data: obj,}
+
+func BroadCaseMsg(namespace, room, event string, obj interface{}) {
+	cmd := ResponseCmd{Code: 1, Url: event, Message: "success", Data: obj,}
 	bytes, err := json.Marshal(cmd)
 	if err != nil {
 		log.Error(err.Error())
 	}
 	log.Info("broadCast: ", string(bytes))
-	SServer.broadcastMessage(DefaultNamespace, DefaultRoom, SubMinerInfo, cmd)
+	SServer.broadcastMessage(namespace, room, event, cmd)
 }
 
 type Server struct {
@@ -56,15 +54,15 @@ func (ss *Server) RegisterRouterV1(namespace, event string, fn func(c *Context))
 	ss.server.OnEvent(namespace, event, func(s socketio.Conn, data string) {
 		log.Debug("client request: ", s.ID(), s.RemoteAddr(), data)
 		uri := utils.GetJsonValue(data, "uri")
-		event := utils.GetJsonValue(data, "event")
+		rEvent := utils.GetJsonValue(data, "rEvent")
 		body := utils.GetJsonValue(data, "body")
 		msgId := utils.GetJsonValue(data, "msgId")
-		if (uri == "" && event == "") || msgId == "" {
-			s.Emit(event, NewFailResp("Uri or MsgId is empty"))
+		if (uri == "" && rEvent == "") || msgId == "" {
+			s.Emit(rEvent, NewFailResp("Uri or MsgId is empty"))
 		} else {
 			tempUri := uri
 			if uri == "" {
-				tempUri = event
+				tempUri = rEvent
 			}
 			context := NewContext(s, tempUri, msgId, body)
 			fn(context)
