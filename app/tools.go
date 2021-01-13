@@ -1,9 +1,11 @@
 package app
 
-
+import (
+	"encoding/json"
+	"reflect"
+)
 
 func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{} {
-
 	mapByHostName := mapByHostName(workerInfo)
 
 	mapByState := mapByState(mapByHostName)
@@ -100,9 +102,6 @@ func mapByState(data map[string]interface{}) map[string]interface{} {
 // 根据 hostName 进行分组
 func mapByHostName(jobs map[string]interface{}) map[string]interface{} {
 	mapByHostName := make(map[string]interface{})
-	if len(jobs) == 0 {
-		return nil
-	}
 	for _, task := range jobs {
 		sectorInfo := task.(map[string]interface{})
 		if _, ok := sectorInfo["hostName"]; !ok { // 判断扇区是否存在
@@ -150,6 +149,48 @@ func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
 			tV := v
 			result[tk] = tV
 		}
+	}
+	return result
+}
+
+
+func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
+	param := make(map[string]interface{})
+	data, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &param)
+	if err != nil {
+		return nil, err
+	}
+	return param, nil
+}
+
+
+// 比较求两个map得差集,
+func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range newMap {
+		if reflect.TypeOf(value).Kind() == reflect.Map {
+			if _, ok := oldMap[key]; !ok {
+				result[key] = value
+			} else {
+				tempOldMap := oldMap[key].(map[string]interface{})
+				tempNewMap := value.(map[string]interface{})
+				diffMap := DiffMap(tempOldMap, tempNewMap)
+				if diffMap != nil {
+					result[key] = diffMap
+				}
+			}
+		} else {
+			if tv, ok := oldMap[key]; !ok || value != tv {
+				result[key] = value
+			}
+		}
+	}
+	if len(result) == 0 {
+		return nil
 	}
 	return result
 }

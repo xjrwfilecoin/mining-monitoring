@@ -309,16 +309,16 @@ func mapToTask(src map[string]interface{}) Task {
 // 根据 hostName 分组归纳信息
 // jobs task信息 ; workerHardwareInfo 硬件列表信息
 
-func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{} {
+func MapParse(jobs, hardwareInfos map[string]interface{}) interface{} {
 
-	mapByHostName := mapByHostName(workerInfo)
+	mapByHostName := mapByHostName(jobs)
 
 	mapByState := mapByState(mapByHostName)
 
 	mapByType := mapByType(mapByState)
 
 	var res []interface{}
-	if workerHardwareInfo == nil || len(workerHardwareInfo) == 0 {
+	if hardwareInfos == nil || len(hardwareInfos) == 0 {
 		for _, workerInfo := range mapByType {
 			res = append(res, workerInfo)
 		}
@@ -326,7 +326,7 @@ func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{}
 	}
 
 	// 结合硬件信息
-	for hostName, hardwareInfo := range workerHardwareInfo {
+	for hostName, hardwareInfo := range hardwareInfos {
 		thInfo := hardwareInfo.(map[string]interface{})
 		if hInfo, ok := mapByType[hostName]; ok { // jobs 中存在的主机在更新设备硬件信息
 			info := hInfo.(map[string]interface{})
@@ -410,7 +410,7 @@ func mapByHostName(jobs map[string]interface{}) map[string]interface{} {
 	}
 	for _, task := range jobs {
 		sectorInfo := task.(map[string]interface{})
-		if _, ok := sectorInfo["hostName"]; !ok { // 判断扇区是否存在
+		if _, ok := sectorInfo["hostName"]; !ok {      // 判断扇区是否存在
 			continue
 		}
 		hostName := sectorInfo["hostName"].(string)

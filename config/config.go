@@ -1,5 +1,14 @@
 package config
 
+import "syscall"
+
+const (
+	// SIGUSR1 linux SIGUSR1
+	SIGUSR1 = syscall.Signal(0xa)
+
+	// SIGUSR2 linux SIGUSR2
+	SIGUSR2 = syscall.Signal(0xc)
+)
 
 const RegisterSmsTemplate =""
 

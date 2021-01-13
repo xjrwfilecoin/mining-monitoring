@@ -101,7 +101,8 @@ func TestShellMinerInfo(t *testing.T) {
 
 }
 
-var jobsSrc = `build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
+var jobsSrc = `
+build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
 localIP:  172.70.16.201
 ID        Sector  Worker    Hostname       Task  State        Time
 c71e05fc  8598    74d84e37  ya_amd_node36  PC1   running      2h12m29.5s
@@ -163,7 +164,8 @@ func TestWorkerJobs(t *testing.T) {
 	}
 }
 
-var hardwareInfo = `bnxt_en-pci-0201
+var hardwareInfo = `
+bnxt_en-pci-0201
 Adapter: PCI adapter
 temp1:        +54.0°C  
 
@@ -178,7 +180,7 @@ temp1:        +54.0°C
 
  03:58:55 up 5 days, 19:04,  4 users,  load average: 0.62, 2.75, 3.62
               total        used        free      shared  buff/cache   available
-Mem:           503G        988M        482G         76K         20G        498G
+Mem:           503G        9.4G        378G        1.8M        116G        492G
 Swap:          8.0G         63M        7.9G
 Filesystem      Size  Used Avail Use% Mounted on
 udev            252G     0  252G   0% /dev
@@ -394,11 +396,18 @@ func TestParseMinerInfo(t *testing.T) {
 		fmt.Println(err.Error())
 		return
 	}
-	jobs := param["jobs"]
-	hardwareInfo := param["hardwareInfo"]
-	tJobs := jobs.(map[string]interface{})
-	tHardware := hardwareInfo.(map[string]interface{})
-	result := MapParse(tJobs, tHardware)
+	jobs := make(map[string]interface{})
+	hardwareInfo := make(map[string]interface{})
+	tJobs,ok := param["jobs"]
+	if ok{
+		jobs = tJobs.(map[string]interface{})
+	}
+	tHardwareInfo,ok := param["hardwareInfo"]
+	if ok{
+		hardwareInfo = tHardwareInfo.(map[string]interface{})
+	}
+
+	result := MapParse(jobs, hardwareInfo)
 	data, err := json.MarshalIndent(result, "  ", "   ")
 	if err != nil {
 		fmt.Println(err.Error())
@@ -466,7 +475,34 @@ func TestMinerWorkers(t *testing.T) {
 		}
 
 	}
-	for key,value:=range param{
-		fmt.Println(key,value)
+	for key, value := range param {
+		fmt.Println(key, value)
 	}
+}
+
+func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
+	param := make(map[string]interface{})
+	data, err := json.Marshal(input)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &param)
+	if err != nil {
+		return nil, err
+	}
+	return param, nil
+}
+
+func Test01(t *testing.T) {
+	param := make(map[string]interface{})
+	param["test"] = 01
+
+	copyMap, err := DeepCopyMap(param)
+	if err!=nil{
+		fmt.Println(err.Error())
+		return
+	}
+	param["test"]=1000
+	fmt.Println(copyMap)
+	fmt.Println(param)
 }

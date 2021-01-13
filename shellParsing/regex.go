@@ -36,8 +36,8 @@ var gpuInfoReg = regexp.MustCompile(`\|(.*)Default \|`)
 
 var cpuLoadReg = regexp.MustCompile(`load average: ([\d]*.[\d]*),`)
 
-var memoryUsedReg = regexp.MustCompile(`Mem:[\s]*([\d]*[GM])[\s]*([\d]*[GM])`)
+var memoryUsedReg = regexp.MustCompile(`Mem:[\s]*([\d]*\.*[\d]*[GM])[\s]*([\d]*\.*[\d]*[GM])`)
 
 var diskUsedRateReg = regexp.MustCompile(`([\d]*.[\d]*%) /opt/hdd_pool`)
 var diskReadReg = regexp.MustCompile(`Actual DISK READ:[\s]*([\d]*.*[\d]*.*\/s) \|`)
-var diskWriteReg = regexp.MustCompile(`Actual DISK WRITE:[\s]*([\d]*.*[\d]*.*\/s)`)
+var diskWriteReg = regexp.MustCompile(`Actual DISK WRITE:[\s]*([\d]*\.*[\d]*.*\/s)`)

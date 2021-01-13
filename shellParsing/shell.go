@@ -16,10 +16,8 @@ type ShellParse struct {
 	Workers []WorkerInfo
 }
 
-func NewShellParse(workers []WorkerInfo) *ShellParse {
-	return &ShellParse{
-		Workers: workers,
-	}
+func NewShellParse() *ShellParse {
+	return &ShellParse{}
 }
 
 // todo 隔离分开
@@ -52,7 +50,13 @@ func (sp *ShellParse) getTaskInfo() (map[string]interface{}, error) {
 	}
 	minerInfoMap["jobs"] = minerJobs
 	log.Debug("minerJobs: ", minerJobs)
-	hardwareInfo, err := sp.hardwareInfo(sp.Workers)
+
+	workers, err := sp.GetMinerWorkers()
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("minerWorkers: ", workers)
+	hardwareInfo, err := sp.hardwareInfo(workers)
 	if err != nil {
 		return nil, err
 	}
@@ -73,14 +77,13 @@ func (sp *ShellParse) MsgNums() (interface{}, error) {
 
 // 获取所有worker硬件信息
 // todo
-func (sp *ShellParse) hardwareInfo(workers []WorkerInfo) (map[string]interface{}, error) {
+func (sp *ShellParse) hardwareInfo(workers map[string]*WorkerInfo) (map[string]interface{}, error) {
 	if len(workers) == 0 {
 		return nil, nil
 	}
 	obj := make(chan HardwareInfo, 10)
-	for i := 0; i < len(workers); i++ {
-		wInfo := workers[i]
-		go sp.runHardware(wInfo, obj)
+	for _, workerInfo := range workers {
+		go sp.runHardware(workerInfo, obj)
 	}
 	ctx, _ := context.WithTimeout(context.TODO(), 60*time.Second)
 
@@ -103,8 +106,8 @@ func (sp *ShellParse) hardwareInfo(workers []WorkerInfo) (map[string]interface{}
 	}
 }
 
-func (sp *ShellParse) runHardware(w WorkerInfo, obj chan HardwareInfo) {
-	execInfo := fmt.Sprintf(`root@%v`, w.IP)
+func (sp *ShellParse) runHardware(w *WorkerInfo, obj chan HardwareInfo) {
+	execInfo := fmt.Sprintf(`root@%v`, w.HostName)
 	hardwareInfo := HardwareInfo{}
 	var data string
 	var err error
@@ -179,9 +182,8 @@ func getGraphicsCardInfo(data string) interface{} {
 	return graphCardList
 }
 
-
 func getGraphicsCardInfoV1(data string) interface{} {
-	graphCardList:=make(map[string]interface{})
+	graphCardList := make(map[string]interface{})
 	idAllStrs := gpuIdReg.FindAllStringSubmatch(data, -1)
 	gpInfoAllStrs := gpuInfoReg.FindAllStringSubmatch(data, -1)
 	if len(idAllStrs) < 1 || len(gpInfoAllStrs) < 1 {
@@ -192,7 +194,7 @@ func getGraphicsCardInfoV1(data string) interface{} {
 			continue
 		}
 		temp, used := getGpuInfo(gpInfoAllStrs[i][0])
-		graphCardList[getGpuId(idAllStrs[i][0])]=GraphicsCardInfo{
+		graphCardList[getGpuId(idAllStrs[i][0])] = GraphicsCardInfo{
 			Name: getGpuId(idAllStrs[i][0]),
 			Temp: temp,
 			Use:  used,
@@ -200,8 +202,6 @@ func getGraphicsCardInfoV1(data string) interface{} {
 	}
 	return graphCardList
 }
-
-
 
 func getGpuInfo(src string) (string, string) {
 	fields := strings.Fields(src)
@@ -219,12 +219,9 @@ func getGpuId(src string) string {
 	return fields[1]
 }
 
-
-
-
-func getNetIOV1(data string)interface{}{
+func getNetIOV1(data string) interface{} {
 	allSubStr := netIOAverageReg.FindAllStringSubmatch(data, -1)
-	NetIOes:=make(map[string]interface{})
+	NetIOes := make(map[string]interface{})
 	for i := 0; i < len(allSubStr); i++ {
 		if len(allSubStr[i]) == 0 {
 			continue
@@ -237,7 +234,7 @@ func getNetIOV1(data string)interface{}{
 		if len(fields) < 9 {
 			continue
 		}
-		NetIOes[fields[1]]=NetCardIO{
+		NetIOes[fields[1]] = NetCardIO{
 			Name: fields[1],
 			Rx:   fields[4],
 			TX:   fields[5],
@@ -245,8 +242,6 @@ func getNetIOV1(data string)interface{}{
 	}
 	return NetIOes
 }
-
-
 
 func getNetIO(data string) interface{} {
 	allSubStr := netIOAverageReg.FindAllStringSubmatch(data, -1)
@@ -272,36 +267,64 @@ func getNetIO(data string) interface{} {
 	return NetIOes
 }
 
-
-
-
-
-func(sp *ShellParse)GetMinerWorkers()([]Worker,error){
+func (sp *ShellParse) GetMinerWorkers() (map[string]*WorkerInfo, error) {
 	data, err := sp.ExecCmd("lotus-miner", "sealing", "workers")
 	if err != nil {
 		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
 	}
 	reader := bufio.NewReader(bytes.NewBuffer([]byte(data)))
-	var res []Worker
+	workersMap := make(map[string]*WorkerInfo)
+	preHostName := ""
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil || io.EOF == err {
 			break
 		}
-		if !strings.HasPrefix(line, "Worker") {
-			continue
+		if strings.HasPrefix(line, "Worker") {
+			fields := strings.Fields(line)
+			if len(fields) < 4 {
+				continue
+			}
+			preHostName = fields[3]
+			workersMap[fields[3]] = &WorkerInfo{HostName: fields[3], Id: fields[1]}
+		} else if strings.Contains(line, "GPU") {
+			workerInfo, ok := workersMap[preHostName]
+			if ok {
+				workerInfo.GPU = 1
+			}
 		}
-		fields := strings.Fields(line)
-		if len(fields)<4{
-			continue
-		}
-		res =append(res,Worker{Hostname:fields[3],Id:fields[1]})
+
 	}
-	return res,nil
+	return workersMap, nil
 }
 
-
-
+func (sp *ShellParse) GetMinerJobsV1() (map[string]*Task, error) {
+	data, err := sp.ExecCmd("lotus-miner", "sealing", "jobs")
+	if err != nil {
+		return nil, fmt.Errorf("exec lotus-miner sealing jobs: %v \n", err)
+	}
+	canParse := false
+	taskListMap := make(map[string]*Task)
+	reader := bufio.NewReader(bytes.NewBuffer([]byte(data)))
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil || io.EOF == err {
+			break
+		}
+		if !canParse && strings.HasPrefix(line, "ID") {
+			canParse = true
+			continue
+		}
+		if canParse {
+			arrs := strings.Fields(line)
+			if len(arrs) < 7 {
+				continue
+			}
+			taskListMap[arrs[3]] = &Task{Id: arrs[0], Sector: arrs[1], Worker: arrs[2], HostName: arrs[3], Task: arrs[4], State: arrs[5], Time: arrs[6],}
+		}
+	}
+	return taskListMap, nil
+}
 
 func (sp *ShellParse) GetMinerJobs() (map[string]interface{}, error) {
 	data, err := sp.ExecCmd("lotus-miner", "sealing", "jobs")

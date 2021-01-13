@@ -1,9 +1,7 @@
 package shellParsing
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"mining-monitoring/log"
 	"time"
 )
@@ -30,7 +28,7 @@ func (m *Manager) DoShell() (map[string]interface{}, error) {
 
 }
 
-func (m *Manager) Run(obj chan interface{}) {
+func (m *Manager) Run(obj chan map[string]interface{}) {
 	if e := recover(); e != nil {
 		log.Error("manager shell error ", e)
 	}
@@ -61,20 +59,10 @@ func (m *Manager) Run(obj chan interface{}) {
 	}
 }
 
-func NewManager(path string) (*Manager, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read workerhost error %v \n", err)
-	}
-	var workers []WorkerInfo
-	err = json.Unmarshal(data, &workers)
-	if err != nil {
-		return nil, fmt.Errorf("parse json error: %v \n", err)
-	}
+func NewManager() (*Manager, error) {
 
 	return &Manager{
 		currentInfo: map[string]interface{}{},
-		shellParse:  NewShellParse(workers),
-		Workers:     workers,
+		shellParse:  NewShellParse(),
 	}, nil
 }

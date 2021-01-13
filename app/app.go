@@ -9,20 +9,18 @@ import (
 	"mining-monitoring/model"
 	httpsvr "mining-monitoring/net/http"
 	"mining-monitoring/net/socket"
-	"mining-monitoring/processmanager"
 	"mining-monitoring/service"
 	"mining-monitoring/shellParsing"
 	"os"
 	"os/signal"
 	"reflect"
 	"syscall"
+	"time"
 )
 
 var ShellManager *shellParsing.Manager
 
-func Run(cfgPath, workerHost string) error {
-	processmanager.Daemon()
-	processmanager.CheckPid("mining-monitoring")
+func Run(cfgPath string) error {
 	runtimeConfig, err := ReadCfg(cfgPath)
 	if err != nil {
 		return err
@@ -32,30 +30,30 @@ func Run(cfgPath, workerHost string) error {
 		return err
 	}
 
-	ShellManager, err = shellParsing.NewManager(workerHost)
+	ShellManager, err = shellParsing.NewManager()
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
 
-	// 注册socketIo路由
+	// 注册路由
 	minerInfo := service.NewMinerInfoService(ShellManager, socket.SServer)
 	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.MinerInfo, minerInfo.MinerInfo)
 	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.SubMinerInfo, minerInfo.SuMinerInfo)
 
 	c := make(chan os.Signal)
-	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, processmanager.SIGUSR1, processmanager.SIGUSR2)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, config.SIGUSR1, config.SIGUSR2)
 	go func() {
 		for s := range c {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
 				log.Logger.Printf("recv sig %+v and exit process\n", s)
-				processmanager.DefExitFunc()
-			case processmanager.SIGUSR1:
+				DefExitFunc()
+			case config.SIGUSR1:
 				log.Logger.Printf("recv sig %+v and exit process\n", s)
-				processmanager.DefExitFunc()
-			case processmanager.SIGUSR2:
+				DefExitFunc()
+			case config.SIGUSR2:
 				log.Logger.Printf("recv sig %+v and exit process\n", s)
-				processmanager.DefExitFunc()
+				DefExitFunc()
 			default:
 				log.Logger.Println("other", s)
 			}
@@ -69,12 +67,12 @@ func Run(cfgPath, workerHost string) error {
 		}
 	}()
 
-	minerObjSign := make(chan interface{}, 1)
+	minerObjSign := make(chan map[string]interface{}, 1)
 	go func() {
 		for {
 			select {
-			case result := <-minerObjSign:
-				output := ParseMinerInfo(result)
+			case minerInfo := <-minerObjSign:
+				output := ParseMinerInfo(minerInfo)
 				socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, output)
 			default:
 
@@ -82,22 +80,70 @@ func Run(cfgPath, workerHost string) error {
 		}
 	}()
 
-	// todo
 	go ShellManager.Run(minerObjSign)
 
-	// todo db heartbeat
-	//// 初始化mongodb
-	//err = db.MongodbInit(runtimeConfig)
-	//if err != nil {
-	//	fmt.Println(err.Error())
-	//	log.Logger.Fatal("mongodb start error " + err.Error())
-	//	panic(err)
-	//}
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
 }
 
-func ParseMinerInfo(input interface{}) interface{} {
+func broadCastMessage(sign chan map[string]interface{}) {
+	previousMap := make(map[string]interface{})
+	result := make(map[string]interface{})
+	var err error
+	for {
+		select {
+		case minerInfo := <-sign:
+			if len(previousMap) == 0 {
+				previousMap = minerInfo
+				result = previousMap
+			}else {
+				previousMap, err = DeepCopyMap(minerInfo)
+				if err!=nil{
+					log.Error("deepCopyMap: ",err.Error())
+					continue
+				}
+				result = DiffMap(previousMap, minerInfo)
+			}
+			output := mergeMinerInfo(result)
+			socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, output)
+		default:
+
+		}
+	}
+}
+
+
+func mergeMinerInfo(input map[string]interface{}) map[string]interface{}{
+	jobs := make(map[string]interface{})
+	hardwareInfo := make(map[string]interface{})
+	if reflect.TypeOf(input).Kind() != reflect.Map {
+		return nil
+	}
+	tJobs,ok := input["jobs"]
+	if ok{
+		jobs = tJobs.(map[string]interface{})
+	}
+	tHardwareInfo,ok := input["hardwareInfo"]
+	if ok{
+		hardwareInfo = tHardwareInfo.(map[string]interface{})
+	}
+
+	workerInfo := MapParse(jobs, hardwareInfo)
+	input["workerInfo"] = workerInfo
+	delete(input, "jobs")
+	delete(input, "hardwareInfo")
+	return input
+}
+
+
+
+
+
+
+
+
+
+func ParseMinerInfo(input interface{}) map[string]interface{} {
 	param := make(map[string]interface{})
 	if reflect.TypeOf(input).Kind() != reflect.Map {
 		return param
@@ -108,10 +154,17 @@ func ParseMinerInfo(input interface{}) interface{} {
 	tJobs := jobs.(map[string]interface{})
 	tHardware := hardwareInfo.(map[string]interface{})
 	workerInfo := MapParse(tJobs, tHardware)
+	tempMap["workerInfo"] = workerInfo
 	delete(tempMap, "jobs")
 	delete(tempMap, "hardwareInfo")
-	tempMap["workerInfo"] = workerInfo
 	return tempMap
+}
+
+// DefExitFunc 缺省信号退出函数
+func DefExitFunc() {
+	now := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("%v Default Sig Exit ... \n", now)
+	os.Exit(0)
 }
 
 func ReadCfg(path string) (*model.RuntimeConfig, error) {
