@@ -28,13 +28,11 @@ func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{}
 			param := mergeMaps(parseHardwareInfo(thInfo), info)
 			res = append(res, param)
 		} else {
-			res = append(res, mergeMaps(thInfo))
+			res = append(res, mergeMaps(parseHardwareInfo(thInfo)))
 		}
 	}
 	return res
 }
-
-
 
 func mapByType(data map[string]interface{}) map[string]interface{} {
 	// 把按状态分组，在按照任务类型分组
@@ -119,18 +117,16 @@ func mapByHostName(jobs map[string]interface{}) map[string]interface{} {
 	return mapByHostName
 }
 
-
-
 func parseHardwareInfo(src map[string]interface{}) map[string]interface{} {
 	var gpus []interface{}
-	if gpuList, ok := src["gpuInfo"]; ok {
+	if gpuList, ok := src["gpuInfo"]; ok && gpuList != nil {
 		gpuMap := gpuList.(map[string]interface{})
 		for _, gpu := range gpuMap {
 			gpus = append(gpus, gpu)
 		}
 	}
 	var netIOes []interface{}
-	if netioMap, ok := src["netIO"]; ok {
+	if netioMap, ok := src["netIO"]; ok && netioMap != nil {
 		ioMap := netioMap.(map[string]interface{})
 		for _, io := range ioMap {
 			netIOes = append(netIOes, io)
@@ -153,7 +149,6 @@ func mergeMaps(maps ...map[string]interface{}) map[string]interface{} {
 	return result
 }
 
-
 func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
 	param := make(map[string]interface{})
 	data, err := json.Marshal(input)
@@ -166,7 +161,6 @@ func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
 	}
 	return param, nil
 }
-
 
 // 比较求两个map得差集,
 func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
