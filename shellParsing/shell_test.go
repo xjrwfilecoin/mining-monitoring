@@ -434,6 +434,7 @@ Worker edd1ea93-c135-43e4-aad6-202143607b15, host
 	CPU:  [                                                                ] 0/8 core(s) in use
 	RAM:  [|||||||||||||||||||||||||||                                     ] 42% 4.964 GiB/11.67 GiB
 	VMEM: [|||||||||||||||||||||||||||                                     ] 42% 4.964 GiB/11.67 GiB
+	GPU: GeForce RTX 3060 Ti, not used
 Worker f1d9037a-7063-43ba-ab4b-65c65deacf0d, host worker05
 	CPU:  [                                                                ] 0/8 core(s) in use
 	RAM:  [||||||||||||||||||||||||||||||                                  ] 47% 5.553 GiB/11.67 GiB
@@ -442,20 +443,30 @@ Worker f1d9037a-7063-43ba-ab4b-65c65deacf0d, host worker05
 
 func TestMinerWorkers(t *testing.T) {
 	reader := bufio.NewReader(bytes.NewBuffer([]byte(minerWorkers)))
-	var res []Worker
+	param := make(map[string]*WorkerInfo)
+	preHostName := ""
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil || io.EOF == err {
 			break
 		}
-		if !strings.HasPrefix(line, "Worker") {
-			continue
+		if strings.HasPrefix(line, "Worker") {
+			fields := strings.Fields(line)
+			if len(fields) < 4 {
+				continue
+			}
+			preHostName = fields[3]
+			param[fields[3]] = &WorkerInfo{HostName: fields[3], Id: fields[1]}
+
+		} else if strings.Contains(line, "GPU") {
+			workerInfo, ok := param[preHostName]
+			if ok {
+				workerInfo.GPU = 1
+			}
 		}
-		fields := strings.Fields(line)
-		if len(fields)<4{
-			continue
-		}
-		res =append(res,Worker{Hostname:fields[3],Id:fields[1]})
+
 	}
-	fmt.Println(res)
+	for key,value:=range param{
+		fmt.Println(key,value)
+	}
 }

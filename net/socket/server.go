@@ -54,7 +54,7 @@ func (ss *Server) RegisterRouterV1(namespace, event string, fn func(c *Context))
 	ss.server.OnEvent(namespace, event, func(s socketio.Conn, data string) {
 		log.Debug("client request: ", s.ID(), s.RemoteAddr(), data)
 		uri := utils.GetJsonValue(data, "uri")
-		rEvent := utils.GetJsonValue(data, "rEvent")
+		rEvent := utils.GetJsonValue(data, "event")
 		body := utils.GetJsonValue(data, "body")
 		msgId := utils.GetJsonValue(data, "msgId")
 		if (uri == "" && rEvent == "") || msgId == "" {

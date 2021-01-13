@@ -88,16 +88,21 @@ func ParseJobsInfo(jobs, workerHardwareInfo map[string]interface{}) interface{} 
 func parseHardwareInfo(src map[string]interface{}) map[string]interface{} {
 	var gpus []interface{}
 	if gpuList, ok := src["gpuInfo"]; ok {
-		gpuMap := gpuList.(map[string]interface{})
-		for _, gpu := range gpuMap {
-			gpus = append(gpus, gpu)
+		if gpuList!=nil{
+			gpuMap := gpuList.(map[string]interface{})
+			for _, gpu := range gpuMap {
+				gpus = append(gpus, gpu)
+			}
 		}
+
 	}
 	var netIOes []interface{}
 	if netioMap, ok := src["netIO"]; ok {
-		ioMap := netioMap.(map[string]interface{})
-		for _, io := range ioMap {
-			netIOes = append(netIOes, io)
+		if netioMap!=nil{
+			ioMap := netioMap.(map[string]interface{})
+			for _, io := range ioMap {
+				netIOes = append(netIOes, io)
+			}
 		}
 	}
 	src["gpuInfo"] = gpus
