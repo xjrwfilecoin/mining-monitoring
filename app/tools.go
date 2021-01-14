@@ -28,7 +28,9 @@ func MapParse(workerInfo, workerHardwareInfo map[string]interface{}) interface{}
 			param := mergeMaps(parseHardwareInfo(thInfo), info)
 			res = append(res, param)
 		} else {
-			res = append(res, mergeMaps(parseHardwareInfo(thInfo)))
+			hostNameMap:=make(map[string]interface{})
+			hostNameMap["hostName"]=hostName
+			res = append(res, mergeMaps(parseHardwareInfo(thInfo),hostNameMap))
 		}
 	}
 	return res
@@ -166,13 +168,21 @@ func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
 func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for key, value := range newMap {
+		if value==nil{
+			continue
+		}
 		if reflect.TypeOf(value).Kind() == reflect.Map {
 			if _, ok := oldMap[key]; !ok {
 				result[key] = value
 			} else {
-				tempOldMap := oldMap[key].(map[string]interface{})
+				tToldMap:=make(map[string]interface{})
+				tempOldMap,ok := oldMap[key]
+				if ok{
+					tToldMap = tempOldMap.(map[string]interface{})
+				}
+
 				tempNewMap := value.(map[string]interface{})
-				diffMap := DiffMap(tempOldMap, tempNewMap)
+				diffMap := DiffMap(tToldMap, tempNewMap)
 				if diffMap != nil {
 					result[key] = diffMap
 				}

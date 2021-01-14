@@ -493,6 +493,31 @@ func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
 	return param, nil
 }
 
+
+
+func Test03(t *testing.T){
+	test:=make([]int,0,100)
+	fmt.Println(test[0])
+}
+
+
+func Test02(t *testing.T){
+	users:=[]string{"01","02","03","04"}
+	for index,info:=range users[1:]{
+		fmt.Println(index,info)
+	}
+	users01:=[]string{"aa","bb"}
+	copy(users[1:],users[3:])
+	fmt.Println(users)
+	fmt.Println(users01)
+
+
+
+
+}
+
+
+
 func Test01(t *testing.T) {
 	param := make(map[string]interface{})
 	param["test"] = 01

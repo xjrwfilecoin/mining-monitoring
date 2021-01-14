@@ -16,6 +16,10 @@ func (m *Manager) GetCurrentMinerInfo() interface{} {
 	return m.currentInfo
 }
 
+func (m *Manager) UpdateCurrentMinerInfo(info map[string]interface{}) {
+	m.currentInfo = info
+}
+
 func (m *Manager) DoShell() (map[string]interface{}, error) {
 	if e := recover(); e != nil {
 		log.Error("doShell error: ", e)
@@ -40,7 +44,7 @@ func (m *Manager) Run(obj chan map[string]interface{}) {
 		obj <- result
 	}
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -51,7 +55,6 @@ func (m *Manager) Run(obj chan map[string]interface{}) {
 				fmt.Printf("doShell error %v \n", err)
 				continue
 			}
-			m.currentInfo = result
 			obj <- result
 		default:
 
