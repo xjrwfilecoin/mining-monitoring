@@ -384,8 +384,11 @@ func (sp *ShellParse) GetPostBalance() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
 	}
-	postBalance := postBalanceReg.FindAllStringSubmatch(data, 1)
+	log.Error("test",data)
+	postBalance := postBalanceTestReg.FindAllStringSubmatch(data, 1)
+	log.Error("test")
 	pb := getRegexValue(postBalance)
+
 	return pb, nil
 }
 

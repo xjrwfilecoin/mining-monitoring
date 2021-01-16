@@ -24,7 +24,7 @@ type ResponseCmd struct {
 	Code    int         `json:"code"`
 	Url     string      `json:"uri"`
 	Message string      `json:"message"`
-	Data    interface{} `json:"body"`
+	Body    interface{} `json:"body"`
 	MsgId   string      `json:"msgId"`
 }
 
@@ -66,12 +66,12 @@ func (c *Context) FailResp(args ...string) {
 	if len(args) > 0 {
 		msg = args[0]
 	}
-	resp := ResponseCmd{Code: 0, Url: c.Uri, Message: msg, Data: nil, MsgId: c.MsgId,}
+	resp := ResponseCmd{Code: 0, Url: c.Uri, Message: msg, Body: nil, MsgId: c.MsgId,}
 	c.Conn.Emit(c.Uri, resp)
 }
 
 func (c *Context) SuccessResp(data interface{}) {
-	resp := ResponseCmd{Code: 1, Url: c.Uri, Message: "success", Data: data, MsgId: c.MsgId,}
+	resp := ResponseCmd{Code: 1, Url: c.Uri, Message: "success", Body: data, MsgId: c.MsgId,}
 	c.Conn.Emit(c.Uri, resp)
 }
 

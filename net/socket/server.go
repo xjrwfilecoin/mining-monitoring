@@ -18,7 +18,7 @@ var SServer = NewServer()
 
 
 func BroadCaseMsg(namespace, room, event string, obj interface{}) {
-	cmd := ResponseCmd{Code: 1, Url: event, Message: "success", Data: obj,}
+	cmd := ResponseCmd{Code: 1, Url: event, Message: "success", Body: obj,}
 	bytes, err := json.Marshal(cmd)
 	if err != nil {
 		log.Error(err.Error())

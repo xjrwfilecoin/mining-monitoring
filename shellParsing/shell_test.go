@@ -10,11 +10,46 @@ import (
 	"testing"
 )
 
-var postSrc = `name       ID      key           use         balance                          
-owner      t0100   t3qxt533a...  other post  49899998.999888415326285699 FIL  
-worker     t0100   t3qxt533a...  other post  49899998.999888415326285699 FIL  
-control-0  t0100   t3qxt533a...  other post  49899998.999888415326285699 FIL  
-control-1  t01001  t3whckee7...  post        100000.999952762113703286 FIL`
+var postSrc = `
+owner      t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
+worker     t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
+control-0  t0116299  t3qsi32gm...  post   5.00000000001 FIL
+`
+
+var postStr001 =`
+owner      t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
+worker     t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
+control-0  t0116299  t3qsi32gm...  \033[32m post \033[0m   \033[31m 5.00000000001 FIL \033[0m
+`
+
+
+var postStr01 = `
+\033[31m 5.00000000001 FIL \033[0m
+`
+
+func TestPost002(t *testing.T){
+	postBalance := postBalanceTestReg.FindAllStringSubmatch(postStr001, 1)
+
+	fmt.Println(postBalance)
+	fmt.Println("PostBalance:", getRegexValue(postBalance))
+}
+
+
+
+func TestPost001(t *testing.T){
+	postBalance := postBalanceReg.FindAllStringSubmatch(postStr01, 1)
+	fmt.Println(postBalance)
+	fmt.Println("PostBalance:", getRegexValue(postBalance))
+}
+
+
+func TestPostBalance(t *testing.T) {
+
+	postBalance := postBalanceStrReg.FindAllStringSubmatch(postSrc, 1)
+	fmt.Println(postBalance)
+	fmt.Println("PostBalance:", getRegexValue(postBalance))
+
+}
 
 var src = `build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
 localIP:  172.70.16.201
@@ -62,9 +97,6 @@ func TestShellMinerInfo(t *testing.T) {
 
 	minerBalance := minerBalanceReg.FindAllStringSubmatch(src, 1)
 	fmt.Println("minerBalance:  ", getRegexValue(minerBalance))
-
-	postBalance := postBalanceReg.FindAllStringSubmatch(postSrc, 1)
-	fmt.Println("PostBalance: ", getRegexValue(postBalance))
 
 	workerBalance := workerBalanceReg.FindAllStringSubmatch(src, 1)
 	fmt.Println("WorkerBalance:  ", getRegexValue(workerBalance))
@@ -398,12 +430,12 @@ func TestParseMinerInfo(t *testing.T) {
 	}
 	jobs := make(map[string]interface{})
 	hardwareInfo := make(map[string]interface{})
-	tJobs,ok := param["jobs"]
-	if ok{
+	tJobs, ok := param["jobs"]
+	if ok {
 		jobs = tJobs.(map[string]interface{})
 	}
-	tHardwareInfo,ok := param["hardwareInfo"]
-	if ok{
+	tHardwareInfo, ok := param["hardwareInfo"]
+	if ok {
 		hardwareInfo = tHardwareInfo.(map[string]interface{})
 	}
 
@@ -493,41 +525,33 @@ func DeepCopyMap(input map[string]interface{}) (map[string]interface{}, error) {
 	return param, nil
 }
 
-
-
-func Test03(t *testing.T){
-	test:=make([]int,0,100)
+func Test03(t *testing.T) {
+	test := make([]int, 0, 100)
 	fmt.Println(test[0])
 }
 
-
-func Test02(t *testing.T){
-	users:=[]string{"01","02","03","04"}
-	for index,info:=range users[1:]{
-		fmt.Println(index,info)
+func Test02(t *testing.T) {
+	users := []string{"01", "02", "03", "04"}
+	for index, info := range users[1:] {
+		fmt.Println(index, info)
 	}
-	users01:=[]string{"aa","bb"}
-	copy(users[1:],users[3:])
+	users01 := []string{"aa", "bb"}
+	copy(users[1:], users[3:])
 	fmt.Println(users)
 	fmt.Println(users01)
 
-
-
-
 }
-
-
 
 func Test01(t *testing.T) {
 	param := make(map[string]interface{})
 	param["test"] = 01
 
 	copyMap, err := DeepCopyMap(param)
-	if err!=nil{
+	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	param["test"]=1000
+	param["test"] = 1000
 	fmt.Println(copyMap)
 	fmt.Println(param)
 }

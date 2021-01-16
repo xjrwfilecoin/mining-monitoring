@@ -21,7 +21,9 @@ var failSectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
 var preCommitFailedReg = regexp.MustCompile(`PreCommitFailed: ([\d]*)`)
 
 // post
-var postBalanceReg = regexp.MustCompile(`\.\.\.[\s]*post[\s]*([\d]*.*[\d]*.*FIL)`)
+var postBalanceStrReg = regexp.MustCompile(`post[\s]*([\d]*.*[\d]*.*FIL)`)
+var postBalanceReg = regexp.MustCompile(`m[\s]*([\d]*.*[\d]*.*FIL).*\\`)
+var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`)
 
 // hardware info
 var cpuTemperatureRTdieReg = regexp.MustCompile(`Tdie:[\s]*(.*[\d]*.*[\d]*.*C) `)

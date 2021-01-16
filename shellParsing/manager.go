@@ -3,7 +3,6 @@ package shellParsing
 import (
 	"fmt"
 	"mining-monitoring/log"
-	"time"
 )
 
 type Manager struct {
@@ -43,23 +42,31 @@ func (m *Manager) Run(obj chan map[string]interface{}) {
 		m.currentInfo = result
 		obj <- result
 	}
-
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
 	for {
-		select {
-		case <-ticker.C:
-			log.Debug("start timer get minerInfo ")
-			result, err := m.DoShell()
-			if err != nil {
-				fmt.Printf("doShell error %v \n", err)
-				continue
-			}
-			obj <- result
-		default:
-
+		log.Debug("start timer get minerInfo ")
+		result, err = m.DoShell()
+		if err != nil {
+			fmt.Printf("doShell error %v \n", err)
 		}
+		obj <- result
 	}
+
+	//ticker := time.NewTicker(30 * time.Second)
+	//defer ticker.Stop()
+	//for {
+	//	select {
+	//	case <-ticker.C:
+	//		log.Debug("start timer get minerInfo ")
+	//		result, err := m.DoShell()
+	//		if err != nil {
+	//			fmt.Printf("doShell error %v \n", err)
+	//			continue
+	//		}
+	//		obj <- result
+	//	default:
+	//
+	//	}
+	//}
 }
 
 func NewManager() (*Manager, error) {
