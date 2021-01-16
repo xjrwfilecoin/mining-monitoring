@@ -88,7 +88,7 @@ func ParseJobsInfo(jobs, workerHardwareInfo map[string]interface{}) interface{} 
 func parseHardwareInfo(src map[string]interface{}) map[string]interface{} {
 	var gpus []interface{}
 	if gpuList, ok := src["gpuInfo"]; ok {
-		if gpuList!=nil{
+		if gpuList != nil {
 			gpuMap := gpuList.(map[string]interface{})
 			for _, gpu := range gpuMap {
 				gpus = append(gpus, gpu)
@@ -98,7 +98,7 @@ func parseHardwareInfo(src map[string]interface{}) map[string]interface{} {
 	}
 	var netIOes []interface{}
 	if netioMap, ok := src["netIO"]; ok {
-		if netioMap!=nil{
+		if netioMap != nil {
 			ioMap := netioMap.(map[string]interface{})
 			for _, io := range ioMap {
 				netIOes = append(netIOes, io)
@@ -292,6 +292,13 @@ func getRegexValueById(src [][]string, id int) string {
 	return strings.ReplaceAll(src[0][id], " ", "")
 }
 
+func getRegexValueByIndex(src [][]string, fid, sid int) string {
+	if len(src) < fid+1 || len(src[fid]) < sid {
+		return "0"
+	}
+	return strings.ReplaceAll(src[fid][sid], " ", "")
+}
+
 func mapToTask(src map[string]interface{}) Task {
 	return Task{
 		Id:       src["id"].(string),
@@ -410,7 +417,7 @@ func mapByHostName(jobs map[string]interface{}) map[string]interface{} {
 	}
 	for _, task := range jobs {
 		sectorInfo := task.(map[string]interface{})
-		if _, ok := sectorInfo["hostName"]; !ok {      // 判断扇区是否存在
+		if _, ok := sectorInfo["hostName"]; !ok { // 判断扇区是否存在
 			continue
 		}
 		hostName := sectorInfo["hostName"].(string)

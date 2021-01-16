@@ -20,9 +20,6 @@ func (m *Manager) UpdateCurrentMinerInfo(info map[string]interface{}) {
 }
 
 func (m *Manager) DoShell() (map[string]interface{}, error) {
-	if e := recover(); e != nil {
-		log.Error("doShell error: ", e)
-	}
 	taskInfo, err := m.shellParse.getTaskInfo()
 	if err != nil {
 		return nil, err
@@ -32,9 +29,13 @@ func (m *Manager) DoShell() (map[string]interface{}, error) {
 }
 
 func (m *Manager) Run(obj chan map[string]interface{}) {
-	if e := recover(); e != nil {
-		log.Error("manager shell error ", e)
-	}
+
+	defer func() {
+		if e := recover(); e != nil {
+			log.Error("manager shell error ", e)
+		}
+	}()
+
 	result, err := m.DoShell()
 	if err != nil {
 		log.Error("manager do shell error: %v \n", err)

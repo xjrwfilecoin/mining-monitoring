@@ -36,20 +36,6 @@ func TestPost002(t *testing.T){
 
 
 
-func TestPost001(t *testing.T){
-	postBalance := postBalanceReg.FindAllStringSubmatch(postStr01, 1)
-	fmt.Println(postBalance)
-	fmt.Println("PostBalance:", getRegexValue(postBalance))
-}
-
-
-func TestPostBalance(t *testing.T) {
-
-	postBalance := postBalanceStrReg.FindAllStringSubmatch(postSrc, 1)
-	fmt.Println(postBalance)
-	fmt.Println("PostBalance:", getRegexValue(postBalance))
-
-}
 
 var src = `build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
 localIP:  172.70.16.201
@@ -78,7 +64,7 @@ Total Spendable:  1279.727 FIL
 
 Sectors:
         Total: 8468
-        Proving: 7558
+        Proving: 7777
         Packing: 3
         PreCommit1: 28
         PreCommit2: 73
@@ -113,8 +99,9 @@ func TestShellMinerInfo(t *testing.T) {
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(src, 1)
 	fmt.Println("TotalSectors: ", getRegexValue(totalSectors))
 
-	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 1)
-	fmt.Println("effectSectors: ", getRegexValue(effectSectors))
+	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 2)
+	fmt.Println(effectSectors)
+	fmt.Println("effectSectors: ", getRegexValueByIndex(effectSectors,1,1))
 
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
 	fmt.Println("errorsSectors: ", getRegexValue(errorsSectors))

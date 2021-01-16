@@ -384,9 +384,7 @@ func (sp *ShellParse) GetPostBalance() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("exec lotus-miner actor control list: %v \n", err)
 	}
-	log.Error("test",data)
 	postBalance := postBalanceTestReg.FindAllStringSubmatch(data, 1)
-	log.Error("test")
 	pb := getRegexValue(postBalance)
 
 	return pb, nil
@@ -412,8 +410,10 @@ func (sp *ShellParse) GetMinerInfo() (*MinerInfo, error) {
 	minerInfo.EffectivePower = getRegexValue(effectPower)
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(data, 1)
 	minerInfo.TotalSectors = getRegexValue(totalSectors)
-	effectSectors := effectSectorReg.FindAllStringSubmatch(data, 1)
-	minerInfo.EffectiveSectors = getRegexValue(effectSectors)
+
+	effectSectors := effectSectorReg.FindAllStringSubmatch(data, 2)
+	minerInfo.EffectiveSectors = getRegexValueByIndex(effectSectors,1,1)
+
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.ErrorSectors = getRegexValue(errorsSectors)
 	recoverySectors := recoverySectorReg.FindAllStringSubmatch(data, 1)
