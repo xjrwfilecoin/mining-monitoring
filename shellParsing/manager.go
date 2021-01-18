@@ -19,6 +19,11 @@ func (m *Manager) UpdateCurrentMinerInfo(info map[string]interface{}) {
 	m.currentInfo = info
 }
 
+func (m *Manager) RunV1(cmd chan CmdData) {
+	go m.shellParse.Receiver(cmd)
+	m.shellParse.Send()
+}
+
 func (m *Manager) DoShell() (map[string]interface{}, error) {
 	taskInfo, err := m.shellParse.getTaskInfo()
 	if err != nil {
@@ -71,7 +76,10 @@ func (m *Manager) Run(obj chan map[string]interface{}) {
 }
 
 func NewManager() (*Manager, error) {
-
+	_, err := log.MyLogicLogger("./log")
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
 		currentInfo: map[string]interface{}{},
 		shellParse:  NewShellParse(),

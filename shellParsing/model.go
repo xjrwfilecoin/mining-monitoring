@@ -1,5 +1,80 @@
 package shellParsing
 
+type Worker struct {
+	Hostname string
+	Id       string
+	Gpu      int
+	CmdList  []ShellCmd
+}
+
+type Miner struct {
+	MinerId string
+	CmdList []ShellCmd
+}
+
+type ShellCmd struct {
+	HostName string
+	Name     string
+	State    CmdState
+	CmdType  CmdType
+	Params   []string
+	close    chan struct{}
+}
+
+func NewHardwareShellCmd(hostName, name string, cmdType CmdType, params []string) ShellCmd {
+	return ShellCmd{HostName: hostName, Name: name, State: HardwareState, CmdType: cmdType, Params: params}
+}
+
+func NewLotusShellCmd(hostName, name string, cmdType CmdType, params []string) ShellCmd {
+	return ShellCmd{HostName: hostName, Name: name, State: LotusState, CmdType: cmdType, Params: params}
+}
+
+type CmdData struct {
+	HostName string
+	MinerId  string
+	CmdType  CmdType
+	State    CmdState
+	Data     interface{}
+}
+
+func NewCmdData(hostName string, cmdType CmdType, state CmdState, data interface{}) CmdData {
+	return CmdData{HostName: hostName, MinerId: hostName, State: state, CmdType: cmdType, Data: data}
+}
+
+type CpuTemp struct {
+	Temp string `json:"temp"`
+}
+
+type GpuInfo struct {
+	Name string `json:"name"`
+	Temp string `json:"temp"`
+	Used string `json:"used"`
+}
+
+type Disk struct {
+	Used string `json:"used"`
+}
+
+type Memory struct {
+	Used  string `json:"used"`
+	Total string `json:"total"`
+}
+
+type CpuLoad struct {
+	Load string `json:"load"`
+}
+
+type IoInfo struct {
+	ReadIO  string `json:"readIo"`
+	WriteIO string `json:"writeIo"`
+}
+
+type NetIO struct {
+	Name string `json:"name"`
+	Tx   string `json:"tx"`
+	Rx   string `json:"rx"`
+}
+
 type WorkerInfo struct {
 	HostName string
 	IP       string
@@ -73,9 +148,4 @@ type GraphicsCardInfo struct {
 	Name string `json:"name"`
 	Temp string `json:"temp"`
 	Use  string `json:"use"`
-}
-
-type Worker struct {
-	Hostname string
-	Id       string
 }

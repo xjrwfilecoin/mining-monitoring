@@ -1,28 +1,29 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"mining-monitoring/shellParsing"
+	"time"
 )
 
 func main() {
-	manager, err := shellParsing.NewManager("./workerhost.json")
+	manager, err := shellParsing.NewManager()
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
-	result, err := manager.DoShell()
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	bytes, err := json.Marshal(result)
-	if err!=nil{
-		fmt.Println(err.Error())
-		return
-	}
-	fmt.Println(string(bytes))
+
+	sign := make(chan shellParsing.CmdData, 10)
+
+	go func() {
+		for {
+			select {
+			case info := <-sign:
+				fmt.Println("result: ", info)
+			}
+		}
+	}()
+	manager.RunV1(sign)
+
+	time.Sleep(60 * time.Hour)
 }
-
-

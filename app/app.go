@@ -11,6 +11,7 @@ import (
 	"mining-monitoring/net/socket"
 	"mining-monitoring/service"
 	"mining-monitoring/shellParsing"
+	"mining-monitoring/store"
 	"os"
 	"os/signal"
 	"reflect"
@@ -67,13 +68,19 @@ func Run(cfgPath string) error {
 		}
 	}()
 
-	minerObjSign := make(chan map[string]interface{}, 1)
-
+	//minerObjSign := make(chan map[string]interface{}, 1)
 	//go timerMinerInfo(minerObjSign)
+	//go broadCastMessage(ShellManager, minerObjSign)
+	go ShellManager.Run(sign)
 
-	go broadCastMessage(ShellManager, minerObjSign)
 
-	go ShellManager.Run(minerObjSign)
+
+
+	sign := make(chan shellParsing.CmdData, 10)
+	manager := store.NewManager()
+	go manager.Recv(sign)
+	go ShellManager.RunV1(sign)
+
 
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
@@ -110,7 +117,6 @@ func broadCastMessage(shellManger *shellParsing.Manager, sign chan map[string]in
 
 				info := mergeMinerInfo(previousMap)
 				shellManger.UpdateCurrentMinerInfo(info)
-
 
 				result = DiffMap(previousMap, minerInfo)
 			}
