@@ -52,9 +52,11 @@ func (sp *ShellParse) init() {
 	sp.CmdMap[LotusMinerWorkers] = sp.ExecLotusWorkers
 	sp.CmdMap[LotusMpoolCmd] = sp.ExecLotusMpoolInfo
 
+	for i := 0; i < len(sp.Workers); i++ {
+	}
 	// todo just test
 	sp.Workers = append(sp.Workers, Worker{Hostname: "192.168.0.10", CmdList: sp.getWorkCmdList("192.168.0.10")})
-	minerCmdList := sp.getMinerCmdList("")
+	minerCmdList := sp.getMinerCmdList("t01000")
 	sp.Miners = append(sp.Miners, Miner{MinerId: "", CmdList: minerCmdList})
 
 }
@@ -82,7 +84,40 @@ func (sp *ShellParse) getWorkCmdList(hostName string) []ShellCmd {
 	return cmdList
 }
 
+func (sp *ShellParse) initData() error {
+	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
+	minerInfoCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerInfoCmd, []string{"info"})
+	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
+		workers := sp.GetMinerWorkersV2(input)
+		var res []Worker
+		for i := 0; i < len(workers); i++ {
+			work := workers[i]
+			cmdList := sp.getWorkCmdList(work.HostName)
+			res = append(res, Worker{Hostname: work.HostName, Id: work.Id, Gpu: work.GPU, CmdList: cmdList})
+		}
+		sp.Workers = res
+	})
+	if err != nil {
+		return err
+	}
+	err = sp.execShellCmd(minerInfoCmd, func(input string) {
+		minerInfo := sp.getMinerInfo(input)
+		minerCmdList := sp.getMinerCmdList(minerInfo.MinerId)
+		sp.Miners = append(sp.Miners, Miner{MinerId: minerInfo.MinerId, CmdList: minerCmdList})
+	})
+	return err
+}
+
 func (sp *ShellParse) Send() {
+
+	for {
+		err := sp.initData()
+		if err != nil {
+			time.Sleep(1 * time.Minute)
+			log.Error("init data error %v \n", err)
+		}
+		break
+	}
 	sp.init()
 	for i := 0; i < len(sp.Miners); i++ {
 		miner := sp.Miners[i]
@@ -121,6 +156,15 @@ func (sp *ShellParse) Receiver(sign chan CmdData) {
 			sign <- obj
 		}
 	}
+}
+
+func (sp *ShellParse) execShellCmd(cmd ShellCmd, fn func(input string)) error {
+	data, err := sp.ExecCmd(cmd.Name, cmd.Params...)
+	if err != nil {
+		return err
+	}
+	fn(data)
+	return nil
 }
 
 func (sp *ShellParse) processTask(cmd ShellCmd, fn func(cmd ShellCmd, input string) CmdData) {
@@ -165,6 +209,11 @@ func (sp *ShellParse) ExecLotusMpoolInfo(cmd ShellCmd, data string) CmdData {
 }
 
 func (sp *ShellParse) ExecLotusMinerInfo(cmd ShellCmd, data string) CmdData {
+	minerInfo := sp.getMinerInfo(data)
+	return NewCmdData(cmd.HostName, cmd.CmdType, cmd.State, minerInfo)
+}
+
+func (sp *ShellParse) getMinerInfo(data string) MinerInfo {
 	minerInfo := MinerInfo{}
 	minerId := minerIdReg.FindAllStringSubmatch(data, 1)
 	minerInfo.MinerId = getRegexValue(minerId)
@@ -180,10 +229,8 @@ func (sp *ShellParse) ExecLotusMinerInfo(cmd ShellCmd, data string) CmdData {
 	minerInfo.EffectivePower = getRegexValue(effectPower)
 	totalSectors := totalSectorsReg.FindAllStringSubmatch(data, 1)
 	minerInfo.TotalSectors = getRegexValue(totalSectors)
-
 	effectSectors := effectSectorReg.FindAllStringSubmatch(data, 2)
 	minerInfo.EffectiveSectors = getRegexValueByIndex(effectSectors, 1, 1)
-
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.ErrorSectors = getRegexValue(errorsSectors)
 	recoverySectors := recoverySectorReg.FindAllStringSubmatch(data, 1)
@@ -193,7 +240,7 @@ func (sp *ShellParse) ExecLotusMinerInfo(cmd ShellCmd, data string) CmdData {
 	failSectors := failSectorReg.FindAllStringSubmatch(data, 1)
 	minerInfo.FailSectors = getRegexValue(failSectors)
 	minerInfo.Timestamp = time.Now().Unix()
-	return NewCmdData(cmd.HostName, cmd.CmdType, cmd.State, minerInfo)
+	return minerInfo
 }
 
 func (sp *ShellParse) ExecGPUCmd(cmd ShellCmd, input string) CmdData {

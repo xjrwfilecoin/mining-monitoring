@@ -12,12 +12,18 @@ type Manager struct {
 	ml       sync.Mutex
 }
 
+
+
 func NewManager() *Manager {
 	return &Manager{
 		Miners:   make(map[MinerId]*MinerInfo),
 		sendSign: make(chan map[string]interface{}, 100),
 	}
 }
+
+
+
+
 
 func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 	go m.Send()

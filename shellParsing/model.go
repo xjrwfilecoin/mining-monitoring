@@ -82,7 +82,7 @@ type WorkerInfo struct {
 	GPU      int
 }
 
-type Workers []WorkerInfo
+
 
 type P map[string]interface{}
 

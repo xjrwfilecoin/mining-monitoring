@@ -21,7 +21,7 @@ func (m *Manager) UpdateCurrentMinerInfo(info map[string]interface{}) {
 
 func (m *Manager) RunV1(cmd chan CmdData) {
 	go m.shellParse.Receiver(cmd)
-	m.shellParse.Send()
+	go m.shellParse.Send()
 }
 
 func (m *Manager) DoShell() (map[string]interface{}, error) {
