@@ -15,7 +15,7 @@ type MinerInfo struct {
 	MinerId    MinerId
 	MiningInfo map[shellParsing.CmdType]shellParsing.CmdData
 	Hardware   map[DeviceId]shellParsing.CmdData
-	ml         sync.RWMutex
+	ml         sync.Mutex
 	hl         sync.RWMutex
 }
 
@@ -24,6 +24,8 @@ func NewMinerInfo(minerId MinerId) *MinerInfo {
 		MinerId:    minerId,
 		MiningInfo: make(map[shellParsing.CmdType]shellParsing.CmdData),
 		Hardware:   make(map[DeviceId]shellParsing.CmdData),
+		ml:         sync.Mutex{},
+		hl:         sync.RWMutex{},
 	}
 }
 
