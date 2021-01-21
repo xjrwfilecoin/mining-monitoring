@@ -24,6 +24,8 @@ func NewMinerInfo(minerId MinerId) *MinerInfo {
 		MinerId:    minerId,
 		MiningInfo: make(map[shellParsing.CmdType]shellParsing.CmdData),
 		Hardware:   make(map[DeviceId]shellParsing.CmdData),
+		ml:         sync.Mutex{},
+		hl:         sync.RWMutex{},
 	}
 }
 
