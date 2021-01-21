@@ -71,7 +71,7 @@ func Run(cfgPath string) error {
 	//minerObjSign := make(chan map[string]interface{}, 1)
 	//go timerMinerInfo(minerObjSign)
 	//go broadCastMessage(ShellManager, minerObjSign)
-	go ShellManager.Run(sign)
+	//go ShellManager.Run(sign)
 
 
 
