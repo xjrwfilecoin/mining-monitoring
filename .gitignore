@@ -16,8 +16,12 @@
 
 \.idea/
 
-log/
-
-mock/
+*.png
 
 *.pid
+
+*.log
+
+mock/shell/shell
+
+mining-monitoring
