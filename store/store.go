@@ -36,8 +36,7 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 			minerInfo, ok := m.Miners[minerId]
 			m.ml.Unlock()
 			if !ok {
-				minerInfo = &MinerInfo{MinerId: minerId}
-				m.Miners[minerId] = minerInfo
+				m.Miners[minerId] = NewMinerInfo(minerId)
 			}
 			go m.UpdateMinerInfo(minerInfo, data)
 		}

@@ -19,6 +19,14 @@ type MinerInfo struct {
 	hl         sync.RWMutex
 }
 
+func NewMinerInfo(minerId MinerId) *MinerInfo {
+	return &MinerInfo{
+		MinerId:    minerId,
+		MiningInfo: make(map[shellParsing.CmdType]shellParsing.CmdData),
+		Hardware:   make(map[DeviceId]shellParsing.CmdData),
+	}
+}
+
 func (m *MinerInfo) updateData(obj shellParsing.CmdData) map[string]interface{} {
 	switch obj.State {
 	case shellParsing.LotusState:
