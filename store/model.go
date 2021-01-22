@@ -15,7 +15,7 @@ type MinerInfo struct {
 	MinerId    MinerId
 	MiningInfo map[shellParsing.CmdType]shellParsing.CmdData
 	Hardware   map[DeviceId]shellParsing.CmdData
-	ml         sync.Mutex
+	ml         sync.RWMutex
 	hl         sync.RWMutex
 }
 
@@ -24,8 +24,6 @@ func NewMinerInfo(minerId MinerId) *MinerInfo {
 		MinerId:    minerId,
 		MiningInfo: make(map[shellParsing.CmdType]shellParsing.CmdData),
 		Hardware:   make(map[DeviceId]shellParsing.CmdData),
-		ml:         sync.Mutex{},
-		hl:         sync.RWMutex{},
 	}
 }
 
@@ -93,7 +91,6 @@ func (m *MinerInfo) DiffMap(new, old shellParsing.CmdData) map[string]interface{
 }
 
 func ParseJobs(jobs []map[string]interface{}) map[string]interface{} {
-
 	mapByHostName := mapByHost(jobs) // hostName:[{}]
 
 	mapByState := mapByState(mapByHostName)
