@@ -82,7 +82,7 @@ func (m *MinerInfo) DiffMap(new, old shellParsing.CmdData) map[string]interface{
 
 		break
 	case shellParsing.LotusMinerJobs:
-		return ParseJobs(new.Data.([]map[string]interface{}))
+		return nil
 	default:
 
 	}

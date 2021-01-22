@@ -23,14 +23,12 @@ func NewManager() *Manager {
 
 
 
-
-
 func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 	go m.Send()
 	for {
 		select {
 		case data := <-obj:
-			log.Debug("store rec data: %v ", data)
+			log.Debug("store rec data: ", data)
 			minerId := MinerId(data.MinerId)
 			m.ml.Lock()
 			minerInfo, ok := m.Miners[minerId]
@@ -48,7 +46,7 @@ func (m *Manager) Send() {
 	for {
 		select {
 		case diffData := <-m.sendSign:
-			log.Debug("send diff map:  %v ", diffData)
+			log.Debug("send diff map:  ", diffData)
 			// todo 广播
 		}
 	}

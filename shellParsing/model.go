@@ -1,10 +1,26 @@
 package shellParsing
 
+import "time"
+
+
+
+
+type Job struct {
+	Id       string `json:"id"`
+	Sector   string `json:"sector"` //扇区Id
+	Worker   string `json:"worker"`
+	HostName string `json:"hostName"`
+	Task     string `json:"task"`  //任务类型
+	State    string `json:"state"` // 任务状态
+	Time     string `json:"time"`  // 耗时
+}
+
 type Worker struct {
 	Hostname string
 	Id       string
 	Gpu      int
 	CmdList  []ShellCmd
+	close    chan struct{}
 }
 
 type Miner struct {
@@ -17,6 +33,7 @@ type ShellCmd struct {
 	Name     string
 	State    CmdState
 	CmdType  CmdType
+	Interval time.Duration
 	Params   []string
 	close    chan struct{}
 }
@@ -81,8 +98,6 @@ type WorkerInfo struct {
 	Id       string
 	GPU      int
 }
-
-
 
 type P map[string]interface{}
 

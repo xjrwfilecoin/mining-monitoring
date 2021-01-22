@@ -75,7 +75,6 @@ func Run(cfgPath string) error {
 
 
 
-
 	sign := make(chan shellParsing.CmdData, 10)
 	manager := store.NewManager()
 	go manager.Recv(sign)

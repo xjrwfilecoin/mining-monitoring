@@ -10,6 +10,8 @@ const (
 	SensorsCmd CmdType = "sensorsCmd"
 	GpuCmd     CmdType = "gpuCmd"
 	UpTimeCmd  CmdType = "upTimeCmd"
+
+	GpuEnable CmdType = "gpuEnable"
 	//---------------------------------
 	LotusMinerInfoCmd CmdType = "lotusMinerInfoCmd"
 	LotusMpoolCmd     CmdType = "LotusMpoolCmd"

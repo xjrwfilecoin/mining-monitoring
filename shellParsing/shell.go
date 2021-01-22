@@ -8,27 +8,33 @@ import (
 	"fmt"
 	"io"
 	"mining-monitoring/log"
+	"mining-monitoring/utils"
 	"os/exec"
 	"strings"
 	"time"
 )
 
 type ShellParse struct {
-	Workers      []Worker
+	Workers      []*WorkerInfo
 	Miners       []Miner
 	cmdSign      chan CmdData
-	CmdMap       map[CmdType]func(cmd ShellCmd, input string) CmdData
+	CmdParseMap  map[CmdType]func(cmd ShellCmd, input string) CmdData
 	cmdHeartTime time.Duration // 秒
 	closing      chan struct{}
-	closeCmd     chan struct{}
+	CmdMap       map[CmdType]ShellCmd
+	workerSign   chan Worker
+	Store        *Store
 }
 
 func NewShellParse() *ShellParse {
 	return &ShellParse{
 		cmdSign:      make(chan CmdData, 100),
-		CmdMap:       make(map[CmdType]func(cmd ShellCmd, input string) CmdData),
+		CmdParseMap:  make(map[CmdType]func(cmd ShellCmd, input string) CmdData),
 		closing:      make(chan struct{}),
+		CmdMap:       make(map[CmdType]ShellCmd),
+		workerSign:   make(chan Worker),
 		cmdHeartTime: 10,
+		Store:        NewStore(),
 	}
 }
 
@@ -37,28 +43,20 @@ func (sp *ShellParse) Close() {
 	close(sp.cmdSign)
 }
 
-func (sp *ShellParse) init() {
-	sp.CmdMap[IOCmd] = sp.ExecIOTopCmd
-	sp.CmdMap[SarCmd] = sp.ExecSarNetIOCmd
-	sp.CmdMap[DfHCMd] = sp.ExecDfHCmd
-	sp.CmdMap[FreeHCmd] = sp.ExecFreeHCmd
-	sp.CmdMap[SensorsCmd] = sp.ExecSensorsCmd
-	sp.CmdMap[GpuCmd] = sp.ExecGPUCmd
-	sp.CmdMap[UpTimeCmd] = sp.ExecUptimeCmd
+func (sp *ShellParse) initCmdParse() {
+	sp.CmdParseMap[IOCmd] = sp.ExecIOTopCmd
+	sp.CmdParseMap[SarCmd] = sp.ExecSarNetIOCmd
+	sp.CmdParseMap[DfHCMd] = sp.ExecDfHCmd
+	sp.CmdParseMap[FreeHCmd] = sp.ExecFreeHCmd
+	sp.CmdParseMap[SensorsCmd] = sp.ExecSensorsCmd
+	sp.CmdParseMap[GpuCmd] = sp.ExecGPUCmd
+	sp.CmdParseMap[UpTimeCmd] = sp.ExecUptimeCmd
 
-	sp.CmdMap[LotusMinerInfoCmd] = sp.ExecLotusMinerInfo
-	sp.CmdMap[LotusControlList] = sp.ExecLotusPostInfo
-	sp.CmdMap[LotusMinerJobs] = sp.ExecLotusMinerJobs
-	sp.CmdMap[LotusMinerWorkers] = sp.ExecLotusWorkers
-	sp.CmdMap[LotusMpoolCmd] = sp.ExecLotusMpoolInfo
-
-	for i := 0; i < len(sp.Workers); i++ {
-	}
-	// todo just test
-	sp.Workers = append(sp.Workers, Worker{Hostname: "192.168.0.10", CmdList: sp.getWorkCmdList("192.168.0.10")})
-	minerCmdList := sp.getMinerCmdList("t01000")
-	sp.Miners = append(sp.Miners, Miner{MinerId: "", CmdList: minerCmdList})
-
+	sp.CmdParseMap[LotusMinerInfoCmd] = sp.ExecLotusMinerInfo
+	sp.CmdParseMap[LotusControlList] = sp.ExecLotusPostInfo
+	sp.CmdParseMap[LotusMinerJobs] = sp.ExecLotusMinerJobs
+	sp.CmdParseMap[LotusMinerWorkers] = sp.ExecLotusWorkers
+	sp.CmdParseMap[LotusMpoolCmd] = sp.ExecLotusMpoolInfo
 }
 
 func (sp *ShellParse) getMinerCmdList(minerId string) []ShellCmd {
@@ -71,7 +69,7 @@ func (sp *ShellParse) getMinerCmdList(minerId string) []ShellCmd {
 	return cmdList
 }
 
-func (sp *ShellParse) getWorkCmdList(hostName string) []ShellCmd {
+func (sp *ShellParse) getWorkCmdList(hostName string, gpuEnable bool) []ShellCmd {
 	execInfo := fmt.Sprintf(`root@%v`, hostName)
 	var cmdList []ShellCmd
 	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "ssh", SensorsCmd, []string{execInfo, "sensors"}))
@@ -80,27 +78,90 @@ func (sp *ShellParse) getWorkCmdList(hostName string) []ShellCmd {
 	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "ssh", DfHCMd, []string{execInfo, "df", "-h"}))
 	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "ssh", SarCmd, []string{execInfo, "sar", "-n", "DEV", "1", "2"}))
 	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "ssh", IOCmd, []string{execInfo, "iotop", "-bn1", "|", "head", "-n", "2"}))
-	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "ssh", GpuCmd, []string{execInfo, "nvidia-smi"}))
+	if gpuEnable {
+		cmdList = append(cmdList, NewHardwareShellCmd(hostName, "ssh", GpuCmd, []string{execInfo, "nvidia-smi"}))
+	}
 	return cmdList
 }
 
-func (sp *ShellParse) initData() error {
+func (sp *ShellParse) doWorkers() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			err := sp.getWorkerInfo()
+			if err != nil {
+				log.Error("get worker info error: ", err.Error())
+			}
+		case <-sp.closing:
+			return
+		}
+	}
+}
+
+func (sp *ShellParse) getWorkerInfo() error {
 	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
-	minerInfoCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerInfoCmd, []string{"info"})
 	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
-		var res []Worker
+		bytes, _ := json.Marshal(workers)
+		log.Info("workerInfo: ", string(bytes))
 		for i := 0; i < len(workers); i++ {
 			work := workers[i]
-			cmdList := sp.getWorkCmdList(work.HostName)
-			res = append(res, Worker{Hostname: work.HostName, Id: work.Id, Gpu: work.GPU, CmdList: cmdList})
+			sp.Store.Update(NewCmdData(work.HostName, GpuEnable, HardwareState, work.GPU))
 		}
-		sp.Workers = res
+		sp.Workers = workers
 	})
-	if err != nil {
-		return err
+	return err
+}
+
+func (sp *ShellParse) doHardWareInfo() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			for i := 0; i < len(sp.Workers); i++ {
+				worker := sp.Workers[i]
+				sp.runWorkerCmdList(worker)
+			}
+		case <-sp.closing:
+			return
+		}
 	}
-	err = sp.execShellCmd(minerInfoCmd, func(input string) {
+}
+
+func (sp *ShellParse) runWorkerCmdList(worker *WorkerInfo) {
+	if worker == nil {
+		return
+	}
+	workerInfo01 := sp.Store.Get(worker.HostName)
+	needGPu := sp.needGPU(workerInfo01)
+	cmdList := sp.getWorkCmdList(worker.HostName, worker.GPU != 0 && needGPu)
+	for i := 0; i < len(cmdList); i++ {
+		cmd := cmdList[i]
+		fn := sp.CmdParseMap[cmd.CmdType]
+		go sp.processTask(cmd, fn)
+	}
+}
+
+func (sp *ShellParse) needGPU(worker WorkerInfo01) bool {
+	if worker.HostName == "" {
+		return false
+	}
+	for i := 0; i < len(worker.Jobs); i++ {
+		job := worker.Jobs[i]
+		if job.Task == "PC1" || job.Task == "C2" {
+			return true
+		}
+	}
+	return false
+
+}
+
+func (sp *ShellParse) getMiner() error {
+	minerInfoCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerInfoCmd, []string{"info"})
+	err := sp.execShellCmd(minerInfoCmd, func(input string) {
 		minerInfo := sp.getMinerInfo(input)
 		minerCmdList := sp.getMinerCmdList(minerInfo.MinerId)
 		sp.Miners = append(sp.Miners, Miner{MinerId: minerInfo.MinerId, CmdList: minerCmdList})
@@ -109,50 +170,23 @@ func (sp *ShellParse) initData() error {
 }
 
 func (sp *ShellParse) Send() {
+	sp.initCmdParse()
 
-	for {
-		err := sp.initData()
-		if err != nil {
-			time.Sleep(1 * time.Minute)
-			log.Error("init data error %v \n", err)
-		}
-		break
-	}
-	sp.init()
-	for i := 0; i < len(sp.Miners); i++ {
-		miner := sp.Miners[i]
-		for j := 0; j < len(miner.CmdList); j++ {
-			cmd := miner.CmdList[j]
-			fn, ok := sp.CmdMap[cmd.CmdType]
-			if !ok {
-				continue
-			}
-			go sp.processTask(cmd, fn)
-		}
-	}
-	for i := 0; i < len(sp.Workers); i++ {
-		worker := sp.Workers[i]
-		for j := 0; j < len(worker.CmdList); j++ {
-			cmd := worker.CmdList[j]
-			fn, ok := sp.CmdMap[cmd.CmdType]
-			if !ok {
-				continue
-			}
-			go sp.processTask(cmd, fn)
-		}
-	}
+	go sp.doWorkers()
+	go sp.doHardWareInfo()
 }
 
 func (sp *ShellParse) Receiver(sign chan CmdData) {
 	for {
 		select {
 		case obj := <-sp.cmdSign:
-			data, err := json.Marshal(obj)
-			if err != nil {
-				log.Error("json Marshal ", err.Error())
-				continue
-			}
-			log.Debug("receiver info ", string(data))
+			//data, err := json.Marshal(obj)
+			//if err != nil {
+			//	log.Error("json Marshal ", err.Error())
+			//	continue
+			//}
+			//log.Debug("receiver info ", string(data))
+			sp.Store.Update(obj)
 			sign <- obj
 		}
 	}
@@ -168,23 +202,12 @@ func (sp *ShellParse) execShellCmd(cmd ShellCmd, fn func(input string)) error {
 }
 
 func (sp *ShellParse) processTask(cmd ShellCmd, fn func(cmd ShellCmd, input string) CmdData) {
-	log.Debug("process Task: ", cmd)
-	ticker := time.NewTicker(sp.cmdHeartTime * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			output, err := sp.ExecCmd(cmd.Name, cmd.Params...)
-			if err != nil {
-				log.Error("process task error %v   %v  %v  ", cmd.CmdType, cmd.Name, err)
-			}
-			cmdData := fn(cmd, output)
-			sp.cmdSign <- cmdData
-		case <-sp.closing:
-			return
-
-		}
+	output, err := sp.ExecCmd(cmd.Name, cmd.Params...)
+	if err != nil {
+		log.Error("process task error ", cmd.CmdType, cmd.Name, cmd.HostName, err)
 	}
+	cmdData := fn(cmd, output)
+	sp.cmdSign <- cmdData
 }
 
 func (sp *ShellParse) ExecLotusWorkers(cmd ShellCmd, data string) CmdData {
@@ -322,7 +345,7 @@ func getNetIOV2(data string) []NetIO {
 	return netio
 }
 
-func (sp *ShellParse) GetMinerJobsCV2(data string) []Task {
+func (sp *ShellParse) GetMinerJobsCV2(data string) interface{} {
 	canParse := false
 	var taskList []Task
 	reader := bufio.NewReader(bytes.NewBuffer([]byte(data)))
@@ -352,7 +375,7 @@ func (sp *ShellParse) GetMinerJobsCV2(data string) []Task {
 
 		}
 	}
-	return taskList
+	return utils.StructToMapByJson(taskList)
 }
 
 func (sp *ShellParse) GetMinerWorkersV2(input string) []*WorkerInfo {
@@ -372,7 +395,7 @@ func (sp *ShellParse) GetMinerWorkersV2(input string) []*WorkerInfo {
 			preHostIndex = preHostIndex + 1
 			res = append(res, &WorkerInfo{HostName: fields[3], Id: fields[1]})
 		} else if strings.Contains(line, "GPU") {
-			if len(res) != 0 && len(res) == preHostIndex {
+			if len(res) != 0 && len(res) == preHostIndex+1 {
 				workerInfo := res[preHostIndex]
 				workerInfo.GPU = 1
 			}
@@ -754,7 +777,7 @@ func parseTaskByStr(line string) (Task, bool) {
 }
 
 func (sp *ShellParse) ExecCmd(cmdName string, args ...string) (string, error) {
-	log.Debug("exec cmd: ", cmdName, args)
+	//log.Debug("exec cmd: ", cmdName, args)
 	cmd := exec.CommandContext(context.TODO(), cmdName, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
