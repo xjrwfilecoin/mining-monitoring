@@ -91,6 +91,7 @@ func (m *MinerInfo) DiffMap(new, old shellParsing.CmdData) map[string]interface{
 }
 
 func ParseJobs(jobs []map[string]interface{}) map[string]interface{} {
+
 	mapByHostName := mapByHost(jobs) // hostName:[{}]
 
 	mapByState := mapByState(mapByHostName)
