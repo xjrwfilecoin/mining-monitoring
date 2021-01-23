@@ -35,9 +35,12 @@ func Run(cfgPath string) error {
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
-
+	sign := make(chan shellParsing.CmdData, 10)
+	manager := store.NewManager()
+	go manager.Recv(sign)
+	go ShellManager.RunV1(sign)
 	// 注册路由
-	minerInfo := service.NewMinerInfoService(ShellManager, socket.SServer)
+	minerInfo := service.NewMinerInfoService(manager, socket.SServer)
 	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.MinerInfo, minerInfo.MinerInfo)
 	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.SubMinerInfo, minerInfo.SuMinerInfo)
 
@@ -75,10 +78,6 @@ func Run(cfgPath string) error {
 
 
 
-	sign := make(chan shellParsing.CmdData, 10)
-	manager := store.NewManager()
-	go manager.Recv(sign)
-	go ShellManager.RunV1(sign)
 
 
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)

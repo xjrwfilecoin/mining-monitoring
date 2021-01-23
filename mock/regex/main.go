@@ -29,10 +29,10 @@ Market Balance:   0
        Available: 0
 Worker Balance:   49899999 FIL
        Control:   50000000 FIL
-Total Spendable:  99911291.538 FIL
+TotalMemory Spendable:  99911291.538 FIL
 
 Sectors:
-	Total: 4
+	TotalMemory: 4
 	Proving: 4`
 
 	result := reg.FindString(src)

@@ -12,7 +12,7 @@ var pledgeBalanceReg = regexp.MustCompile(`Pledge:[\s]*([\d]*.*[\d]*.*FIL)`)
 var effectPowerReg = regexp.MustCompile(`Power:[\s]*([\d]*.*[\d].*) /`)
 var totalPowerReg = regexp.MustCompile(`Committed:[\s]*([\d]*.*[\d].*)`)
 
-var totalSectorsReg = regexp.MustCompile(`Total: ([\d]*)`)
+var totalSectorsReg = regexp.MustCompile(`TotalMemory: ([\d]*)`)
 var effectSectorReg = regexp.MustCompile(`Proving:[\s]+([\d]*)`)
 var errorSectorReg = regexp.MustCompile(`FailedUnrecoverable: ([\d]*)`)
 var recoverySectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)

@@ -1,7 +1,5 @@
 package store
 
-
-
 func mapByType(data map[string]interface{}) map[string]interface{} {
 	// 把按状态分组，在按照任务类型分组
 	mapByTask := make(map[string]interface{})
@@ -65,23 +63,25 @@ func mapByState(data map[string]interface{}) map[string]interface{} {
 	return mapByState
 }
 
-// 根据 hostName 进行分组
-func mapByHost(jobs []map[string]interface{}) map[string]interface{} {
+func mapByHost(jobs map[string]interface{}) map[string]interface{} {
 	mapByHost := make(map[string]interface{})
-	for i := 0; i < len(jobs); i++ {
-		task := jobs[i]
-		hostName, ok := task["hostName"]
-		if !ok {
-			continue
-		}
-		host := hostName.(string)
-		taskList, ok := mapByHost[host]
-		if ok {
-			tasks := taskList.([]map[string]interface{})
-			tasks = append(tasks, task)
-		} else {
-			mapByHost[host] = []map[string]interface{}{task}
+	for _, task := range jobs {
+		if tvalue, ok := task.(map[string]interface{}); ok {
+			hostName, ok := tvalue["hostName"]
+			if !ok {
+				continue
+			}
+			host := hostName.(string)
+			taskList, ok1 := mapByHost[host]
+			if ok1 {
+				tasks := taskList.([]map[string]interface{})
+				tasks = append(tasks, tvalue)
+				mapByHost[host]=tasks
+			} else {
+				mapByHost[host] = []map[string]interface{}{tvalue}
+			}
 		}
 	}
 	return mapByHost
 }
+

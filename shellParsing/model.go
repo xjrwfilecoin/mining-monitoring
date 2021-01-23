@@ -2,9 +2,6 @@ package shellParsing
 
 import "time"
 
-
-
-
 type Job struct {
 	Id       string `json:"id"`
 	Sector   string `json:"sector"` //扇区Id
@@ -30,6 +27,7 @@ type Miner struct {
 
 type ShellCmd struct {
 	HostName string
+	MinerId  string
 	Name     string
 	State    CmdState
 	CmdType  CmdType
@@ -54,36 +52,36 @@ type CmdData struct {
 	Data     interface{}
 }
 
-func NewCmdData(hostName string, cmdType CmdType, state CmdState, data interface{}) CmdData {
-	return CmdData{HostName: hostName, MinerId: hostName, State: state, CmdType: cmdType, Data: data}
+func NewCmdData(hostName, minerId string, cmdType CmdType, state CmdState, data interface{}) CmdData {
+	return CmdData{HostName: hostName, MinerId: minerId, State: state, CmdType: cmdType, Data: data}
 }
 
 type CpuTemp struct {
-	Temp string `json:"temp"`
+	CpuTemp string `json:"cpuTemper"`
 }
 
 type GpuInfo struct {
 	Name string `json:"name"`
 	Temp string `json:"temp"`
-	Used string `json:"used"`
+	Use  string `json:"use"`
 }
 
 type Disk struct {
-	Used string `json:"used"`
+	UseDisk string `json:"useDisk"`
 }
 
 type Memory struct {
-	Used  string `json:"used"`
-	Total string `json:"total"`
+	UseMemory   string `json:"useMemory"`
+	TotalMemory string `json:"totalMemory"`
 }
 
 type CpuLoad struct {
-	Load string `json:"load"`
+	CpuLoad string `json:"cpuLoad"`
 }
 
 type IoInfo struct {
-	ReadIO  string `json:"readIo"`
-	WriteIO string `json:"writeIo"`
+	DiskR string `json:"diskR"`
+	DiskW string `json:"diskW"`
 }
 
 type NetIO struct {
@@ -100,6 +98,10 @@ type WorkerInfo struct {
 }
 
 type P map[string]interface{}
+
+type PostBalance struct {
+	PostBalance string `json:"postBalance"`
+}
 
 type MinerInfo struct {
 	MinerId       string `json:"minerId"`       // MinerId

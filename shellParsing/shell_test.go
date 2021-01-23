@@ -60,10 +60,10 @@ Market Balance:   4.075 mFIL
        Available: 373.466 μFIL
 Worker Balance:   968.058 FIL
        Control:   120.75 FIL
-Total Spendable:  1279.727 FIL
+TotalMemory Spendable:  1279.727 FIL
 
 Sectors:
-        Total: 8468
+        TotalMemory: 8468
         Proving: 7777
         Packing: 3
         PreCommit1: 28
@@ -201,7 +201,7 @@ temp1:        +54.0°C
               total        used        free      shared  buff/cache   available
 Mem:           503G        9.4G        378G        1.8M        116G        492G
 Swap:          8.0G         63M        7.9G
-Filesystem      Size  Used Avail Use% Mounted on
+Filesystem      Size  UseMemory Avail Use% Mounted on
 udev            252G     0  252G   0% /dev
 tmpfs            51G  2.3M   51G   1% /run
 /dev/nvme0n1p2  1.5T  1.2T  221G  85% /
@@ -233,14 +233,14 @@ Average:         eno1      6.00      6.50      0.49      1.72      0.00      0.0
 Average:         eno2      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 Average:           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
 Average:    enp2s0f1np1      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
-Total DISK READ :       0.00 B/s | Total DISK WRITE :    1242.27 K/s
+TotalMemory DISK READ :       0.00 B/s | TotalMemory DISK WRITE :    1242.27 K/s
 Actual DISK READ:       0.00 B/s | Actual DISK WRITE:      22.53 M/s
 Tue Jan 12 03:58:58 2021       
 +-----------------------------------------------------------------------------+
 | NVIDIA-SMI 455.45.01    Driver Version: 455.45.01    CUDA Version: 11.1     |
 |-------------------------------+----------------------+----------------------+
 | GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+| Fan  CpuTemp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
 |                               |                      |               MIG M. |
 |===============================+======================+======================|
 |   0  GeForce RTX 306...  Off  | 00000000:C4:00.0 Off |                  N/A |

@@ -21,32 +21,32 @@ type WorkerInfo01 struct {
 }
 
 // todo 兼容,比对差异更新
-func (w *WorkerInfo01) updateInfo(data CmdData)  {
+func (w *WorkerInfo01) updateInfo(data CmdData) {
 	switch data.CmdType {
 	case IOCmd:
 		info := data.Data.(IoInfo)
-		w.DiskR = info.ReadIO
-		w.DiskW = info.WriteIO
+		w.DiskR = info.DiskR
+		w.DiskW = info.DiskW
 		break
 	case SarCmd:
 		w.NetIO = data.Data.([]NetIO)
 		break
 	case DfHCMd:
-		w.UseDisk = data.Data.(Disk).Used
+		w.UseDisk = data.Data.(Disk).UseDisk
 		break
 	case FreeHCmd:
 		memory := data.Data.(Memory)
-		w.TotalMemory = memory.Total
-		w.UseMemory = memory.Used
+		w.TotalMemory = memory.TotalMemory
+		w.UseMemory = memory.UseMemory
 		break
 	case SensorsCmd:
-		w.CpuTemp = data.Data.(CpuTemp).Temp
+		w.CpuTemp = data.Data.(CpuTemp).CpuTemp
 		break
 	case GpuCmd:
 		w.GpuInfo = data.Data.([]GpuInfo)
 		break
 	case UpTimeCmd:
-		w.CpuLoad = data.Data.(CpuLoad).Load
+		w.CpuLoad = data.Data.(CpuLoad).CpuLoad
 		break
 	case GpuEnable:
 		w.Gpu = data.Data.(int)
@@ -62,21 +62,22 @@ func NewStore() *Store {
 	return &Store{
 		WorkerInfoMap: make(map[string]*WorkerInfo01),
 		sign:          make(chan interface{}),
+		minerInfo:     make(map[string]interface{}),
 	}
 }
 
 type Store struct {
 	WorkerInfoMap map[string]*WorkerInfo01 // hostName
-	sync.RWMutex
-	sign chan interface{}
+	minerInfo     map[string]interface{}
+	sign          chan interface{}
+	wl            sync.RWMutex
+	ml            sync.RWMutex
 }
-
-
 
 func (s *Store) Update(cmdData CmdData) {
 	hostName := cmdData.HostName
-	s.Lock()
-	defer s.Unlock()
+	s.wl.Lock()
+	defer s.wl.Unlock()
 	workerInfo01, ok := s.WorkerInfoMap[hostName]
 	if !ok {
 		workerInfo01 = &WorkerInfo01{HostName: hostName}
@@ -87,8 +88,8 @@ func (s *Store) Update(cmdData CmdData) {
 }
 
 func (s *Store) Get(hostName string) WorkerInfo01 {
-	s.Lock()
-	defer s.Unlock()
+	s.wl.Lock()
+	defer s.wl.Unlock()
 	workerInfo01, ok := s.WorkerInfoMap[hostName]
 	if ok {
 		return *workerInfo01

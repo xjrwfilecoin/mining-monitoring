@@ -1,7 +1,8 @@
 package store
 
 import (
-	"fmt"
+	"encoding/json"
+	"mining-monitoring/log"
 	"mining-monitoring/shellParsing"
 	"mining-monitoring/utils"
 	"sync"
@@ -9,99 +10,108 @@ import (
 
 type MinerId string
 
-type DeviceId string
+type Id struct {
+	MinerId  string
+	HostName string
+	CmdType  shellParsing.CmdType
+	CmdState shellParsing.CmdState
+}
 
 type MinerInfo struct {
-	MinerId    MinerId
-	MiningInfo map[shellParsing.CmdType]shellParsing.CmdData
-	Hardware   map[DeviceId]shellParsing.CmdData
-	ml         sync.RWMutex
-	hl         sync.RWMutex
+	DataMap map[Id]map[string]interface{}
+	sync.RWMutex
 }
 
-func NewMinerInfo(minerId MinerId) *MinerInfo {
+func NewMinerInfo() *MinerInfo {
 	return &MinerInfo{
-		MinerId:    minerId,
-		MiningInfo: make(map[shellParsing.CmdType]shellParsing.CmdData),
-		Hardware:   make(map[DeviceId]shellParsing.CmdData),
+		DataMap: make(map[Id]map[string]interface{}),
 	}
 }
 
-func (m *MinerInfo) updateData(obj shellParsing.CmdData) map[string]interface{} {
-	switch obj.State {
-	case shellParsing.LotusState:
-		return m.miningInfo(obj)
-	case shellParsing.HardwareState:
-		return m.deviceInfo(obj)
-	default:
-	}
+func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
+	m.Lock()
+	defer m.Unlock()
+	id := Id{MinerId: obj.MinerId, HostName: obj.HostName, CmdType: obj.CmdType, CmdState: obj.State}
+	m.DataMap[id] = utils.StructToMapByJson(obj.Data)
 	return nil
 }
 
-func (m *MinerInfo) deviceInfo(obj shellParsing.CmdData) map[string]interface{} {
-	devId := DeviceId(fmt.Sprintf("%v%v", obj.MinerId, obj.HostName))
-	m.hl.Lock()
-	cmdData, ok := m.Hardware[DeviceId(devId)]
-	if !ok {
-		m.Hardware[devId] = cmdData
-	} else {
-		m.Hardware[devId] = obj
+func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
+	m.Lock()
+	defer m.Unlock()
+	hostHardwareMap := make(map[string]map[string]interface{}) // 根据hostName进行分组
+	jobsInfo := make(map[string]interface{})
+	minerInfo := make(map[string]interface{})
+	for keyId, value := range m.DataMap {
+		//log.Error(keyId, value)
+		if keyId.CmdState == shellParsing.LotusState {
+			if keyId.CmdType == shellParsing.LotusMinerJobs {
+				jobsInfo = JobsToArrayV1(value)
+			} else {
+				minerInfo = utils.MergeMaps(minerInfo, value)
+			}
+		} else {
+			info, ok := hostHardwareMap[keyId.HostName]
+			temp := make(map[string]interface{})
+			temp["hostName"] = keyId.HostName
+			if keyId.CmdType == shellParsing.SarCmd {
+				netIO := TraverseMap(value)
+				temp["netIO"]=netIO
+				value=temp
+			} else if keyId.CmdType == shellParsing.GpuCmd {
+				gpuInfo := TraverseMap(value)
+				temp["gpuInfo"]=gpuInfo
+				value=temp
+			}
+
+			if ok {
+				hostHardwareMap[keyId.HostName] = utils.MergeMaps(info, value)
+			} else {
+				hostHardwareMap[keyId.HostName] = value
+			}
+		}
 	}
-	m.hl.Unlock()
-	return DiffMapValue(obj, cmdData)
-}
-
-func (m *MinerInfo) miningInfo(obj shellParsing.CmdData) map[string]interface{} {
-	m.ml.Lock()
-	cmdData, ok := m.MiningInfo[obj.CmdType]
-	if !ok {
-		m.MiningInfo[obj.CmdType] = cmdData
-	} else {
-		m.MiningInfo[obj.CmdType] = obj
-	}
-	m.ml.Unlock()
-	return m.DiffMap(obj, cmdData)
-}
-
-func (m *MinerInfo) DiffMap(new, old shellParsing.CmdData) map[string]interface{} {
-	if new.CmdType == "" {
-		return nil
-	}
-	res := make(map[string]interface{})
-	switch new.CmdType {
-	case shellParsing.LotusMinerInfoCmd:
-		res = DiffMapValue(new, old)
-		break
-	case shellParsing.LotusControlList:
-		res = DiffMapValue(new, old)
-		break
-	case shellParsing.LotusMpoolCmd:
-		res = DiffMapValue(new, old)
-		break
-	case shellParsing.LotusMinerWorkers:
-
-		break
-	case shellParsing.LotusMinerJobs:
-		return nil
-	default:
-
-	}
-
-	return res
-}
-
-func ParseJobs(jobs []map[string]interface{}) map[string]interface{} {
-	mapByHostName := mapByHost(jobs) // hostName:[{}]
-
-	mapByState := mapByState(mapByHostName)
-
-	mapByType := mapByType(mapByState)
-
-	return mapByType
+	result := MergeJobsAndHardware(jobsInfo, hostHardwareMap)
+	response := utils.MergeMaps(minerInfo, result)
+	bytes, _ := json.Marshal(response)
+	log.Error(string(bytes))
+	return nil
 }
 
 func DiffMapValue(new, old shellParsing.CmdData) map[string]interface{} {
 	newMap := utils.StructToMapByJson(new.Data)
 	oldMap := utils.StructToMapByJson(old.Data)
 	return utils.DiffMap(oldMap, newMap)
+}
+
+func TraverseMap(param map[string]interface{}) interface{} {
+	var res []interface{}
+	for _, value := range param {
+		res = append(res, value)
+	}
+	return res
+}
+
+func JobsToArrayV1(param map[string]interface{}) map[string]interface{} {
+	mapByHost := mapByHost(param)
+	mapByState := mapByState(mapByHost)
+	mapByType := mapByType(mapByState)
+
+	return mapByType
+}
+
+func MergeJobsAndHardware(jobs map[string]interface{}, hadrMap map[string]map[string]interface{}) map[string]interface{} {
+	param := make(map[string]interface{})
+	var workerList []map[string]interface{}
+	for hostName, job := range jobs {
+		hardinfo, ok := hadrMap[hostName]
+		if ok {
+			tJob, ok1 := job.(map[string]interface{})
+			if ok1 {
+				workerList = append(workerList, utils.MergeMaps(tJob, hardinfo))
+			}
+		}
+	}
+	param["workerInfo"] = workerList
+	return param
 }

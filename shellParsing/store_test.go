@@ -7,7 +7,7 @@ import (
 
 func Test(t *testing.T){
 	data := CmdData{Data:IoInfo{
-		ReadIO:  "",
+		DiskR:   "",
 		WriteIO: "",
 	}}
 	fmt.Println(data)

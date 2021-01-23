@@ -5,11 +5,11 @@ import (
 	"mining-monitoring/config"
 	"mining-monitoring/log"
 	"mining-monitoring/net/socket"
-	"mining-monitoring/shellParsing"
+	"mining-monitoring/store"
 )
 
 type MinerInfoService struct {
-	shellManager *shellParsing.Manager
+	storageManager *store.Manager
 	socketServer *socket.Server
 }
 
@@ -27,15 +27,15 @@ func (m *MinerInfoService) MinerInfo(c *socket.Context) {
 		c.FailResp(fmt.Errorf("param is error: %v \n", err.Error()).Error())
 		return
 	}
-	info := m.shellManager.GetCurrentMinerInfo()
+	info := m.storageManager.GetMinerInfo()
 	log.Info("minerInfo result: ", info)
 	c.SuccessResp(info)
 
 }
 
-func NewMinerInfoService(sm *shellParsing.Manager, server *socket.Server) IMinerInfo {
+func NewMinerInfoService(sm *store.Manager, server *socket.Server) IMinerInfo {
 	return &MinerInfoService{
 		socketServer: server,
-		shellManager: sm,
+		storageManager: sm,
 	}
 }

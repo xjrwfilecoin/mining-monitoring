@@ -20,9 +20,9 @@ const (
 	LotusMinerWorkers CmdType = "lotusMinerWorkersCmd"
 )
 
-type CmdState int
+type CmdState string
 
 const (
-	LotusState = iota
-	HardwareState
+	LotusState = "lotus-state"
+	HardwareState ="hardware-state"
 )
