@@ -8,9 +8,9 @@ import (
 
 func main() {
 
-	for i := 0; i < 500; i++ {
+	for i := 0; i < 2; i++ {
 		go func() {
-			cmd := exec.Command("sshpass", "-p", "", "ssh", "root@node01", "free", "-h")
+			cmd := exec.Command("sshpass", "-p", "", "ssh", "root@worker01", "free", "-h")
 			output, err := cmd.CombinedOutput()
 			if err != nil {
 				fmt.Println(err.Error())

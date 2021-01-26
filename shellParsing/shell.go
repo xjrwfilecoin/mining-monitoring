@@ -127,7 +127,7 @@ func (sp *ShellParse) doWorkers() {
 	for {
 		select {
 		case <-ticker.C:
-			err := sp.getWorkerInfo()
+			err := sp.getWorkerList()
 			if err != nil {
 				log.Error("get worker info error: ", err.Error())
 			}
@@ -139,18 +139,38 @@ func (sp *ShellParse) doWorkers() {
 	}
 }
 
-func (sp *ShellParse) getWorkerInfo() error {
+func (sp *ShellParse) PingWorkers() {
+	var workers []*WorkerInfo
+	for i := 0; i < len(sp.Workers); i++ {
+		worker := sp.Workers[i]
+		execInfo := fmt.Sprintf(`root@%v`, worker.HostName)
+		cmd := NewHardwareShellCmd(worker.HostName, "sshpass", SensorsCmd, []string{"-p", "", "ssh", execInfo, "free", "-h"})
+		err := sp.execShellCmd(cmd, func(input string) {
+			if !strings.Contains(input, "exit") {
+				workers = append(workers, worker)
+			}
+		})
+		if err != nil {
+			log.Error("ping workers: ", err.Error())
+		}
+
+	}
+	sp.Workers = workers
+}
+
+// todo 锁
+func (sp *ShellParse) getWorkerList() error {
 	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
 	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
-		res := make(map[string]interface{})
-		for i := 0; i < len(workers); i++ {
-			res["hostName"] = utils.StructToMapByJson(workers[i])
-		}
 		sp.Workers = workers
-		sp.cmdSign <- NewCmdData(" ", sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
+
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	sp.PingWorkers()
+	return nil
 }
 
 func (sp *ShellParse) doHardWareInfo() {
@@ -212,7 +232,11 @@ func (sp *ShellParse) Send() {
 	sp.initCmdParse()
 	err := sp.getMiner()
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("lotus-miner cmd not available %v ", err.Error()))
+	}
+	err = sp.getWorkerList()
+	if err != nil {
+		panic(fmt.Errorf("check worker is avaibale: %v ", err.Error()))
 	}
 	go sp.doWorkers()
 	go sp.doMinerInfo()
@@ -478,12 +502,6 @@ func getGraphicsCardInfoV2(data string) interface{} {
 	return param
 }
 
-
-
-
-
-
-
 func (sp *ShellParse) runHardware(w *WorkerInfo, obj chan HardwareInfo) {
 	execInfo := fmt.Sprintf(`root@%v`, w.HostName)
 	hardwareInfo := HardwareInfo{}
@@ -645,8 +663,6 @@ func getNetIO(data string) interface{} {
 	return NetIOes
 }
 
-
-
 func (sp *ShellParse) ExecCmd(cmdName string, args ...string) (string, error) {
 	log.Debug("exec cmd: ", cmdName, args)
 	cmd := exec.Command(cmdName, args...)
@@ -656,5 +672,3 @@ func (sp *ShellParse) ExecCmd(cmdName string, args ...string) (string, error) {
 	}
 	return string(output), nil
 }
-
-
