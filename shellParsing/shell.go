@@ -10,6 +10,7 @@ import (
 	"mining-monitoring/utils"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type ShellParse struct {
 	closing      chan struct{}
 	CmdMap       map[CmdType]ShellCmd
 	workerSign   chan Worker
+	sync.Mutex
 }
 
 func NewShellParse() *ShellParse {
@@ -122,7 +124,7 @@ func (sp *ShellParse) doWorkers() {
 	if err := recover(); err != nil {
 		log.Error(err)
 	}
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(20 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -163,7 +165,9 @@ func (sp *ShellParse) getWorkerList() error {
 	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
 	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
+		sp.Lock()
 		sp.Workers = workers
+		sp.Unlock()
 
 	})
 	if err != nil {
@@ -179,8 +183,11 @@ func (sp *ShellParse) doHardWareInfo() {
 	for {
 		select {
 		case <-ticker.C:
-			for i := 0; i < len(sp.Workers); i++ {
-				worker := sp.Workers[i]
+			sp.Lock()
+			workerList := sp.Workers
+			sp.Unlock()
+			for i := 0; i < len(workerList); i++ {
+				worker := workerList[i]
 				sp.runWorkerCmdList(worker, sp.cmdSign)
 			}
 		case <-sp.closing:
