@@ -5,44 +5,37 @@ import (
 	"reflect"
 )
 
-// todo 优化 o^2
-func DiffArrMap(oldMaps, newMaps []map[string]interface{}, diffKey string) []map[string]interface{} {
-	var res []map[string]interface{}
-	for i := 0; i < len(oldMaps); i++ {
-		oldTempMap := oldMaps[i]
-		oldTempValue, ok := oldTempMap[diffKey]
-		if !ok {
-			continue
-		}
-		for j := 0; j < len(newMaps); j++ {
-			newTempMap := newMaps[j]
-			newTempValue, ok := newTempMap[diffKey]
-			if !ok {
-				continue
-			}
-			if oldTempValue == newTempValue {
-				diffMap := DiffMap(oldTempMap, newTempMap)
-				if len(diffMap) > 0 {
-					res = append(res, diffMap)
-				}
-			}
+
+
+func SimpleDiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for key, value := range newMap {
+		if tv, ok := oldMap[key]; !ok || value != tv {
+			result[key] = value
 		}
 	}
-	return res
+	return result
 }
 
 // 比较求两个map得差集,
-func DiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
+func DeepDiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for key, value := range newMap {
+
 		if reflect.TypeOf(value).Kind() == reflect.Map {
 			if _, ok := oldMap[key]; !ok {
 				result[key] = value
 			} else {
-				tempOldMap := oldMap[key].(map[string]interface{})
-				tempNewMap := value.(map[string]interface{})
-				diffMap := DiffMap(tempOldMap, tempNewMap)
-				if diffMap != nil {
+				tempOldMap, oOk := oldMap[key].(map[string]interface{})
+				if !oOk {
+					continue
+				}
+				tempNewMap, nOK := value.(map[string]interface{})
+				if !nOK {
+					continue
+				}
+				diffMap := DeepDiffMap(tempOldMap, tempNewMap)
+				if diffMap != nil && len(diffMap) != 0 {
 					result[key] = diffMap
 				}
 			}

@@ -116,7 +116,6 @@ type MinerInfo struct {
 	RecoverySectors  string `json:"recoverySectors"`  // 恢复中扇区
 	DeletedSectors   string `json:"deletedSectors"`   // 删除扇区
 	FailSectors      string `json:"failSectors"`      // 失败扇区
-	Timestamp        int64  `json:"timestamp"`        // 此次统计时间
 
 }
 

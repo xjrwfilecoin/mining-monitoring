@@ -1,7 +1,6 @@
 package store
 
 import (
-	"encoding/json"
 	"mining-monitoring/log"
 	"mining-monitoring/shellParsing"
 	"mining-monitoring/utils"
@@ -28,14 +27,56 @@ func NewMinerInfo() *MinerInfo {
 	}
 }
 
-func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
-	m.Lock()
-	defer m.Unlock()
-	id := Id{MinerId: obj.MinerId, HostName: obj.HostName, CmdType: obj.CmdType, CmdState: obj.State}
-	m.DataMap[id] = utils.StructToMapByJson(obj.Data)
+func Parse(obj shellParsing.CmdData) interface{} {
+
+	switch obj.CmdType {
+	case shellParsing.LotusMinerJobs:
+		return LotusJobsToArray(obj)
+	case shellParsing.GpuCmd:
+		return NewCommArrayMap(obj.HostName, "gpuInfo", MapToArray(obj))
+	case shellParsing.SarCmd:
+		return NewCommArrayMap(obj.HostName, "netIO", MapToArray(obj))
+	default:
+	}
+
+	switch obj.State {
+	case shellParsing.LotusState:
+		return NewCommonMap(obj)
+	case shellParsing.HardwareState:
+		return NewWorkerInfoMap(obj)
+	}
 	return nil
 }
 
+func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
+	id := Id{MinerId: obj.MinerId, HostName: obj.HostName, CmdType: obj.CmdType, CmdState: obj.State}
+	m.Lock()
+	defer m.Unlock()
+	oldMap, ok := m.DataMap[id]
+	newMap := utils.StructToMapByJson(obj.Data)
+	diffMap := newMap
+	m.DataMap[id] = newMap
+	if obj.CmdType == shellParsing.LotusMinerWorkers { // workerList信息不用处理后面陆续上报
+		return nil
+	}
+	if ok {
+		if obj.CmdType != shellParsing.LotusMinerJobs { // jobs命令时间每时每刻都在变化，不用处理
+			diffMap = utils.DeepDiffMap(oldMap, newMap)
+		}
+
+	}
+
+	obj.Data = diffMap
+	if len(diffMap) == 0 {
+		return nil
+	}
+	diffResult := Parse(obj)
+	log.Debug("check diff result: ", "type: ", obj.CmdType, "src: ", newMap, "diff: ", diffMap, "diffResult: ", diffResult)
+	return diffResult
+
+}
+
+// 把map中数据找出来，封装成指定数据格式返回前端
 func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 	m.Lock()
 	defer m.Unlock()
@@ -56,12 +97,12 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 			temp["hostName"] = keyId.HostName
 			if keyId.CmdType == shellParsing.SarCmd {
 				netIO := TraverseMap(value)
-				temp["netIO"]=netIO
-				value=temp
+				temp["netIO"] = netIO
+				value = temp
 			} else if keyId.CmdType == shellParsing.GpuCmd {
 				gpuInfo := TraverseMap(value)
-				temp["gpuInfo"]=gpuInfo
-				value=temp
+				temp["gpuInfo"] = gpuInfo
+				value = temp
 			}
 
 			if ok {
@@ -73,15 +114,9 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 	}
 	result := MergeJobsAndHardware(jobsInfo, hostHardwareMap)
 	response := utils.MergeMaps(minerInfo, result)
-	bytes, _ := json.Marshal(response)
-	log.Error(string(bytes))
-	return nil
-}
-
-func DiffMapValue(new, old shellParsing.CmdData) map[string]interface{} {
-	newMap := utils.StructToMapByJson(new.Data)
-	oldMap := utils.StructToMapByJson(old.Data)
-	return utils.DiffMap(oldMap, newMap)
+	//bytes, _ := json.Marshal(response)
+	//log.Error(string(bytes))
+	return response
 }
 
 func TraverseMap(param map[string]interface{}) interface{} {

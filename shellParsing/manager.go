@@ -20,6 +20,7 @@ func (m *Manager) UpdateCurrentMinerInfo(info map[string]interface{}) {
 }
 
 func (m *Manager) RunV1(cmd chan CmdData) {
+
 	go m.shellParse.Receiver(cmd)
 	go m.shellParse.Send()
 }

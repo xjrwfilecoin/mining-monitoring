@@ -1,5 +1,77 @@
 package store
 
+import (
+	"mining-monitoring/shellParsing"
+	"mining-monitoring/utils"
+)
+// lotus jobs 返回前端指定格式
+func LotusJobsToArray(obj shellParsing.CmdData) interface{} {
+	var workerList []map[string]interface{}
+	response := NewMap()
+	param := utils.StructToMapByJson(obj.Data)
+	mapByHost := mapByHost(param)
+	mapByState := mapByState(mapByHost)
+	mapByType := mapByType(mapByState)
+	for _, value := range mapByType {
+		if tv, ok := value.(map[string]interface{}); ok {
+			workerList = append(workerList, tv)
+		}
+	}
+	if len(workerList)==0{
+		return nil
+	}
+	response["workerInfo"] = workerList
+	return response
+}
+
+
+func MapToArray(obj shellParsing.CmdData) interface{} {
+	param := utils.StructToMapByJson(obj.Data)
+	var res []map[string]interface{}
+	for key, value := range param {
+		if item, ok := value.(map[string]interface{}); ok {
+			item["name"] = key
+			res = append(res, item)
+		}
+	}
+	return res
+}
+
+// obj 为array
+func NewCommArrayMap(hostName, key string, obj interface{}) interface{} {
+	var workerList []map[string]interface{}
+	response := NewMap()
+	worker := NewMap()
+	worker["hostName"] = hostName
+	worker[key] = obj
+	workerList = append(workerList, worker)
+	response["workerInfo"] = workerList
+	return response
+
+}
+
+func NewCommonMap(obj shellParsing.CmdData) interface{} {
+	mapByJson := utils.StructToMapByJson(obj.Data)
+	return mapByJson
+}
+
+func NewWorkerInfoMap(obj shellParsing.CmdData) interface{} {
+	var workerList []map[string]interface{}
+	response := NewMap()
+	worker := NewMap()
+	worker["hostName"] = obj.HostName
+	mapByJson := utils.StructToMapByJson(obj.Data)
+	mergeMaps := utils.MergeMaps(worker, mapByJson)
+	workerList = append(workerList, mergeMaps)
+	response["workerInfo"] = workerList
+	return response
+}
+
+func NewMap() map[string]interface{} {
+	param := make(map[string]interface{})
+	return param
+}
+
 func mapByType(data map[string]interface{}) map[string]interface{} {
 	// 把按状态分组，在按照任务类型分组
 	mapByTask := make(map[string]interface{})
@@ -76,7 +148,7 @@ func mapByHost(jobs map[string]interface{}) map[string]interface{} {
 			if ok1 {
 				tasks := taskList.([]map[string]interface{})
 				tasks = append(tasks, tvalue)
-				mapByHost[host]=tasks
+				mapByHost[host] = tasks
 			} else {
 				mapByHost[host] = []map[string]interface{}{tvalue}
 			}
@@ -84,4 +156,3 @@ func mapByHost(jobs map[string]interface{}) map[string]interface{} {
 	}
 	return mapByHost
 }
-

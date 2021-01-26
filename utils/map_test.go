@@ -6,30 +6,61 @@ import (
 	"testing"
 )
 
-var test01 = `
+var oldStr = `
 {
-	"name":"test01",
-	"list":[
-								   { "hostName":"worker01",
-									"id":"67081a0d",
-									"sector":"34",
-									"state":"running",
-									"task":"PC1",
-									"time":"6m53.8s",
-									"worker":"84af77dc"
-								},
-								{
-									"hostName":"worker01",
-									"id":"05d6450f",
-									"sector":"29",
-									"state":"running",
-									"task":"PC1",
-									"time":"2h37m1.3s",
-									"worker":"84af77dc"
-								}
-	]
+	"minerBalance":"1000FIL",
+	"gpuInfo":{
+			"0":{
+					"name":"0",
+					"use":"30"
+				},
+			"1":{
+					"name":"1",
+					"use":"20"
+				}
+	}
 }
 `
+var newStr = `
+{
+	"minerBalance":"1000FIL",
+	"gpuInfo":{
+			"0":{
+					"name":"0",
+					"use":"20"
+				},
+			"1":{
+					"name":"1",
+					"use":"20"
+				}
+	}
+}
+`
+
+func TestDiffMap(t *testing.T) {
+	var new, old map[string]interface{}
+	err := json.Unmarshal([]byte(newStr), &new)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(new)
+	err = json.Unmarshal([]byte(oldStr), &old)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(old)
+	diffMap := DeepDiffMap(old, new)
+	fmt.Println(diffMap)
+	bytes, err := json.Marshal(diffMap)
+	if err!=nil{
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println(string(bytes))
+
+}
 
 type Info struct {
 	Name string      `json:"name"`
@@ -38,51 +69,10 @@ type Info struct {
 
 func TestMap(t *testing.T) {
 	var res Info
-	err := json.Unmarshal([]byte(test01), &res)
+	err := json.Unmarshal([]byte(oldStr), &res)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 	fmt.Println(res)
-}
-
-var newSrc = `
-	{
-		"name":"test01",
-	    "age":10,
-		"info":{
-			"score":11,
-			"title":"测试"
-		}
-	}
-`
-
-var oldSrc = `
-	{
-		"name":"test01",
-	    "age":11,
-		"info":{
-			"score":10,
-			"title":"测试"
-		}
-	}
-`
-
-func TestDiffMap(t *testing.T) {
-	var new, old map[string]interface{}
-	err := json.Unmarshal([]byte(newSrc), &new)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	fmt.Println(new)
-	err = json.Unmarshal([]byte(oldSrc), &old)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-	fmt.Println(old)
-	diffMap := DiffMap(old, new)
-	fmt.Println(diffMap)
-
 }
