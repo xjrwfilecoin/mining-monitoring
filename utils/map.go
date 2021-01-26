@@ -5,7 +5,34 @@ import (
 	"reflect"
 )
 
-
+// 判断 map是否有差异
+func MapIsDiff(oldMap, newMap map[string]interface{}) bool {
+	for key, value := range newMap {
+		if reflect.TypeOf(value).Kind() == reflect.Map {
+			if _, ok := oldMap[key]; !ok {
+				return true
+			} else {
+				tempOldMap, oOk := oldMap[key].(map[string]interface{})
+				if !oOk {
+					continue
+				}
+				tempNewMap, nOK := value.(map[string]interface{})
+				if !nOK {
+					continue
+				}
+				diffMap := DeepDiffMap(tempOldMap, tempNewMap)
+				if diffMap != nil && len(diffMap) != 0 {
+					return true
+				}
+			}
+		} else {
+			if tv, ok := oldMap[key]; !ok || value != tv {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 func SimpleDiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
@@ -17,7 +44,7 @@ func SimpleDiffMap(oldMap, newMap map[string]interface{}) map[string]interface{}
 	return result
 }
 
-// 比较求两个map得差集,
+// 两个map的差集
 func DeepDiffMap(oldMap, newMap map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for key, value := range newMap {

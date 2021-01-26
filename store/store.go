@@ -72,7 +72,6 @@ func (m *Manager) Send() {
 			log.Debug("send diff map:  ", diffData)
 			socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
 
-
 		default:
 
 		}

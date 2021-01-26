@@ -1,14 +1,16 @@
 package shellParsing
 
 import (
-	"fmt"
 	"testing"
 )
 
-func Test(t *testing.T){
-	data := CmdData{Data:IoInfo{
-		DiskR:   "",
-		WriteIO: "",
-	}}
-	fmt.Println(data)
+type User struct {
+	Name string
+}
+
+func Test(t *testing.T) {
+	param := make(map[string]map[string]interface{})
+	var res []User
+	res = append(res, User{Name: "test"})
+
 }

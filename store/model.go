@@ -56,16 +56,16 @@ func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
 	newMap := utils.StructToMapByJson(obj.Data)
 	diffMap := newMap
 	m.DataMap[id] = newMap
-	if obj.CmdType == shellParsing.LotusMinerWorkers { // workerList信息不用处理后面陆续上报
-		return nil
-	}
 	if ok {
-		if obj.CmdType != shellParsing.LotusMinerJobs { // jobs命令时间每时每刻都在变化，不用处理
+		if obj.CmdType == shellParsing.LotusMinerJobs || obj.CmdType == shellParsing.SarCmd || obj.CmdType == shellParsing.GpuCmd {
+			if !utils.MapIsDiff(oldMap, newMap) { // 数据格式前端为array，没有变化，不用推数据
+				return nil
+			}
+		} else {
 			diffMap = utils.DeepDiffMap(oldMap, newMap)
 		}
 
 	}
-
 	obj.Data = diffMap
 	if len(diffMap) == 0 {
 		return nil
@@ -88,6 +88,8 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 		if keyId.CmdState == shellParsing.LotusState {
 			if keyId.CmdType == shellParsing.LotusMinerJobs {
 				jobsInfo = JobsToArrayV1(value)
+			} else if keyId.CmdType == shellParsing.LotusMinerWorkers {
+
 			} else {
 				minerInfo = utils.MergeMaps(minerInfo, value)
 			}
@@ -112,10 +114,10 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 			}
 		}
 	}
-	result := MergeJobsAndHardware(jobsInfo, hostHardwareMap)
+
+	result := MergeJobsAndHardwareV1(jobsInfo, hostHardwareMap)
+
 	response := utils.MergeMaps(minerInfo, result)
-	//bytes, _ := json.Marshal(response)
-	//log.Error(string(bytes))
 	return response
 }
 
@@ -133,6 +135,25 @@ func JobsToArrayV1(param map[string]interface{}) map[string]interface{} {
 	mapByType := mapByType(mapByState)
 
 	return mapByType
+}
+
+func MergeJobsAndHardwareV1(jobs map[string]interface{}, hardwareInfoMap map[string]map[string]interface{}) map[string]interface{} {
+	param := make(map[string]interface{})
+	var workerList []map[string]interface{}
+	for hostName, deviceInfo := range hardwareInfoMap {
+		job, ok := jobs[hostName]
+		if ok {
+			if tJob, ok1 := job.(map[string]interface{}); ok1 {
+				workerList = append(workerList, utils.MergeMaps(tJob, deviceInfo))
+			}
+		} else {
+			worker := NewMap()
+			worker["hostName"] = hostName
+			workerList = append(workerList, utils.MergeMaps(worker, deviceInfo))
+		}
+	}
+	param["workerInfo"] = workerList
+	return param
 }
 
 func MergeJobsAndHardware(jobs map[string]interface{}, hadrMap map[string]map[string]interface{}) map[string]interface{} {

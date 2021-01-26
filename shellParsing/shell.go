@@ -99,7 +99,7 @@ func (sp *ShellParse) getWorkCmdListV1(hostName string, gpuEnable bool) []ShellC
 }
 
 func (sp *ShellParse) doMinerInfo() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -144,14 +144,18 @@ func (sp *ShellParse) getWorkerInfo() error {
 	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
 	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
+		res := make(map[string]interface{})
+		for i := 0; i < len(workers); i++ {
+			res["hostName"] = utils.StructToMapByJson(workers[i])
+		}
 		sp.Workers = workers
-		sp.cmdSign<-NewCmdData(" ",sp.Miners.MinerId,LotusMinerWorkers,LotusState,workers)
+		sp.cmdSign <- NewCmdData(" ", sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
 	})
 	return err
 }
 
 func (sp *ShellParse) doHardWareInfo() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
