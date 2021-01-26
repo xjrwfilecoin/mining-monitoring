@@ -14,7 +14,6 @@ import (
 	"mining-monitoring/store"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 	"time"
 )
@@ -40,7 +39,7 @@ func Run(cfgPath string) error {
 
 	go manager.Recv(sign)
 	go manager.Send()
-	go ShellManager.RunV1(sign)
+	go ShellManager.Run(sign)
 	// 注册路由
 	minerInfo := service.NewMinerInfoService(manager, socket.SServer)
 	socket.SServer.RegisterRouterV1(config.DefaultNamespace, config.MinerInfo, minerInfo.MinerInfo)
@@ -73,100 +72,10 @@ func Run(cfgPath string) error {
 		}
 	}()
 
-	//minerObjSign := make(chan map[string]interface{}, 1)
-	//go timerMinerInfo(minerObjSign)
-	//go broadCastMessage(ShellManager, minerObjSign)
-	//go ShellManager.Run(sign)
-
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
 }
 
-func timerMinerInfo(minerObjSign chan map[string]interface{}) {
-	for {
-		select {
-		case minerInfo := <-minerObjSign:
-			output := ParseMinerInfo(minerInfo)
-			socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, output)
-		default:
-
-		}
-	}
-}
-
-func broadCastMessage(shellManger *shellParsing.Manager, sign chan map[string]interface{}) {
-	previousMap := make(map[string]interface{})
-	result := make(map[string]interface{})
-	var err error
-	for {
-		select {
-		case minerInfo := <-sign:
-			if len(previousMap) == 0 {
-				previousMap = minerInfo
-				result = minerInfo
-			} else {
-				previousMap, err = DeepCopyMap(minerInfo)
-				if err != nil {
-					log.Error("deepCopyMap: ", err.Error())
-					continue
-				}
-
-				info := mergeMinerInfo(previousMap)
-				shellManger.UpdateCurrentMinerInfo(info)
-
-				result = DiffMap(previousMap, minerInfo)
-			}
-			bytes, err := json.Marshal(result)
-			if err == nil {
-				log.Warn("diffMinerInfo: ", string(bytes))
-
-			}
-			output := mergeMinerInfo(result)
-			socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, output)
-		default:
-
-		}
-	}
-}
-
-func mergeMinerInfo(input map[string]interface{}) map[string]interface{} {
-	jobs := make(map[string]interface{})
-	hardwareInfo := make(map[string]interface{})
-	if reflect.TypeOf(input).Kind() != reflect.Map {
-		return nil
-	}
-	tJobs, ok := input["jobs"]
-	if ok {
-		jobs = tJobs.(map[string]interface{})
-	}
-	tHardwareInfo, ok := input["hardwareInfo"]
-	if ok {
-		hardwareInfo = tHardwareInfo.(map[string]interface{})
-	}
-
-	workerInfo := MapParse(jobs, hardwareInfo)
-	input["workerInfo"] = workerInfo
-	delete(input, "jobs")
-	delete(input, "hardwareInfo")
-	return input
-}
-
-func ParseMinerInfo(input interface{}) map[string]interface{} {
-	param := make(map[string]interface{})
-	if reflect.TypeOf(input).Kind() != reflect.Map {
-		return param
-	}
-	tempMap := input.(map[string]interface{})
-	jobs := tempMap["jobs"]
-	hardwareInfo := tempMap["hardwareInfo"]
-	tJobs := jobs.(map[string]interface{})
-	tHardware := hardwareInfo.(map[string]interface{})
-	workerInfo := MapParse(tJobs, tHardware)
-	tempMap["workerInfo"] = workerInfo
-	delete(tempMap, "jobs")
-	delete(tempMap, "hardwareInfo")
-	return tempMap
-}
 
 // DefExitFunc 缺省信号退出函数
 func DefExitFunc() {

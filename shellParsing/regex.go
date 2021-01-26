@@ -17,7 +17,7 @@ var effectSectorReg = regexp.MustCompile(`Proving:[\s]+([\d]*)`)
 var errorSectorReg = regexp.MustCompile(`FailedUnrecoverable: ([\d]*)`)
 var recoverySectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
 var deletedSectorReg = regexp.MustCompile(`Removed:[\s]+([\d]*)`)
-var failSectorReg = regexp.MustCompile(`SealPreCommit2Failed: ([\d]*)`)
+var failSectorReg = regexp.MustCompile(`PreCommitFailed:[\s]+([\d]*)`)
 var preCommitFailedReg = regexp.MustCompile(`PreCommitFailed: ([\d]*)`)
 
 // post

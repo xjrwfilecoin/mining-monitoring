@@ -23,7 +23,7 @@ func main() {
 			}
 		}
 	}()
-	manager.RunV1(sign)
+	manager.Run(sign)
 
 	time.Sleep(60 * time.Hour)
 }
