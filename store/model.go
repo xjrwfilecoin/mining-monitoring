@@ -17,7 +17,8 @@ type Id struct {
 }
 
 type MinerInfo struct {
-	DataMap map[Id]map[string]interface{}
+	DataMap    map[Id]map[string]interface{}
+	WorkerList shellParsing.CmdData
 	sync.RWMutex
 }
 
@@ -27,11 +28,11 @@ func NewMinerInfo() *MinerInfo {
 	}
 }
 
-func Parse(obj shellParsing.CmdData) interface{} {
+func (m *MinerInfo) Parse(obj shellParsing.CmdData) interface{} {
 
 	switch obj.CmdType {
 	case shellParsing.LotusMinerJobs:
-		return LotusJobsToArray(obj)
+		return LotusJobsToArrayV1(m.WorkerList, obj)
 	case shellParsing.GpuCmd:
 		return NewCommArrayMap(obj.HostName, "gpuInfo", MapToArray(obj))
 	case shellParsing.SarCmd:
@@ -50,6 +51,11 @@ func Parse(obj shellParsing.CmdData) interface{} {
 
 func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
 	id := Id{MinerId: obj.MinerId, HostName: obj.HostName, CmdType: obj.CmdType, CmdState: obj.State}
+	if obj.CmdType == shellParsing.LotusMinerWorkers {
+		m.WorkerList = obj
+		return nil
+	}
+
 	m.Lock()
 	defer m.Unlock()
 	oldMap, ok := m.DataMap[id]
@@ -70,7 +76,7 @@ func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
 	if len(diffMap) == 0 {
 		return nil
 	}
-	diffResult := Parse(obj)
+	diffResult := m.Parse(obj)
 	log.Debug("check diff result: ", "type: ", obj.CmdType, "src: ", newMap, "diff: ", diffMap, "diffResult: ", diffResult)
 	return diffResult
 
@@ -115,7 +121,8 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 		}
 	}
 
-	result := MergeJobsAndHardwareV1(jobsInfo, hostHardwareMap)
+	workerList := utils.StructToMapByJson(m.WorkerList.Data)
+	result := MergeJobsAndHardwareV1(workerList, jobsInfo, hostHardwareMap)
 
 	response := utils.MergeMaps(minerInfo, result)
 	return response
@@ -137,23 +144,78 @@ func JobsToArrayV1(param map[string]interface{}) map[string]interface{} {
 	return mapByType
 }
 
-func MergeJobsAndHardwareV1(jobs map[string]interface{}, hardwareInfoMap map[string]map[string]interface{}) map[string]interface{} {
+func MergeJobsAndHardwareV1(workers, jobs map[string]interface{}, hardwareInfoMap map[string]map[string]interface{}) map[string]interface{} {
 	param := make(map[string]interface{})
 	var workerList []map[string]interface{}
-	for hostName, deviceInfo := range hardwareInfoMap {
-		job, ok := jobs[hostName]
-		if ok {
-			if tJob, ok1 := job.(map[string]interface{}); ok1 {
-				workerList = append(workerList, utils.MergeMaps(tJob, deviceInfo))
+	for hostName, _ := range workers {
+		job, jOk := jobs[hostName]
+		hardware, hOk := hardwareInfoMap[hostName]
+		if jOk {
+			tJob, ok1 := job.(map[string]interface{})
+			if !ok1 {
+				continue
+			}
+
+			if hOk {
+				workerList = append(workerList, utils.MergeMaps(tJob, hardware))
+			} else {
+				workerList = append(workerList, fixHardWare(tJob))
 			}
 		} else {
-			worker := NewMap()
-			worker["hostName"] = hostName
-			workerList = append(workerList, utils.MergeMaps(worker, deviceInfo))
+			newEmptyInfo := NewEmptyInfo(hostName)
+			if hOk {
+				workerList = append(workerList, utils.MergeMaps(newEmptyInfo, hardware))
+			} else {
+				workerList = append(workerList, newEmptyInfo)
+			}
+
 		}
 	}
+
+	//for hostName, deviceInfo := range hardwareInfoMap {
+	//	job, ok := jobs[hostName]
+	//	if ok {
+	//		if tJob, ok1 := job.(map[string]interface{}); ok1 {
+	//			workerList = append(workerList, utils.MergeMaps(tJob, deviceInfo))
+	//		}
+	//	} else {
+	//		worker := NewMap()
+	//		worker["hostName"] = hostName
+	//		workerList = append(workerList, utils.MergeMaps(worker, deviceInfo))
+	//	}
+	//}
 	param["workerInfo"] = workerList
 	return param
+}
+
+func fixHardWare(job map[string]interface{}) map[string]interface{} {
+	job["cpuLoad"] = "0"
+	job["cpuTemper"] = "0"
+	job["diskR"] = "0"
+	job["diskW"] = "0"
+	job["gpuInfo"] = []interface{}{}
+	job["netIO"] = []interface{}{}
+	job["totalMemory"] = "0"
+	job["useDisk"] = "0"
+	job["useMemory"] = "0"
+	return job
+}
+
+func NewEmptyInfo(hostName string) map[string]interface{} {
+	newMap := NewMap()
+	newMap["hostName"] = hostName
+	newMap["currentQueue"] = []interface{}{}
+	newMap["pendingQueue"] = []interface{}{}
+	newMap["cpuLoad"] = "0"
+	newMap["cpuTemper"] = "0"
+	newMap["diskR"] = "0"
+	newMap["diskW"] = "0"
+	newMap["gpuInfo"] = []interface{}{}
+	newMap["netIO"] = []interface{}{}
+	newMap["totalMemory"] = "0"
+	newMap["useDisk"] = "0"
+	newMap["useMemory"] = "0"
+	return newMap
 }
 
 func MergeJobsAndHardware(jobs map[string]interface{}, hadrMap map[string]map[string]interface{}) map[string]interface{} {

@@ -4,6 +4,39 @@ import (
 	"mining-monitoring/shellParsing"
 	"mining-monitoring/utils"
 )
+
+func LotusJobsToArrayV1(workers, obj shellParsing.CmdData) interface{} {
+
+	workersMap := utils.StructToMapByJson(workers.Data)
+
+	var workerList []map[string]interface{}
+	response := NewMap()
+	param := utils.StructToMapByJson(obj.Data)
+	mapByHost := mapByHost(param)
+	mapByState := mapByState(mapByHost)
+	mapByType := mapByType(mapByState)
+
+	for hostName, _ := range workersMap {
+		if _, ok := mapByType[hostName]; !ok {
+			newMap := NewMap()
+			newMap["hostName"] = hostName
+			newMap["currentQueue"] = nil
+			newMap["pendingQueue"] = nil
+			workerList = append(workerList, newMap)
+		}
+	}
+	for _, value := range mapByType {
+		if tv, ok := value.(map[string]interface{}); ok {
+			workerList = append(workerList, tv)
+		}
+	}
+	if len(workerList) == 0 {
+		return nil
+	}
+	response["workerInfo"] = workerList
+	return response
+}
+
 // lotus jobs 返回前端指定格式
 func LotusJobsToArray(obj shellParsing.CmdData) interface{} {
 	var workerList []map[string]interface{}
@@ -17,13 +50,12 @@ func LotusJobsToArray(obj shellParsing.CmdData) interface{} {
 			workerList = append(workerList, tv)
 		}
 	}
-	if len(workerList)==0{
+	if len(workerList) == 0 {
 		return nil
 	}
 	response["workerInfo"] = workerList
 	return response
 }
-
 
 func MapToArray(obj shellParsing.CmdData) interface{} {
 	param := utils.StructToMapByJson(obj.Data)

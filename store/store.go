@@ -50,7 +50,6 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 		case data := <-obj:
 			m.MinerId = data.MinerId
 			log.Debug("store rec data: ", data)
-			// todo 如果并发需要加锁
 			minerId := MinerId(data.MinerId)
 			minerInfo, ok := m.Miners[minerId]
 			if !ok {
@@ -69,8 +68,10 @@ func (m *Manager) Send() {
 	for {
 		select {
 		case diffData := <-m.sendSign:
-			log.Debug("send diff map:  ", diffData)
-			socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
+			if diffData != nil {
+				log.Debug("send diff map:  ", diffData)
+				socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
+			}
 
 		default:
 
