@@ -1,5 +1,23 @@
 package shellParsing
 
+var SSHPORT = "22521"
+
+var SSHUSER = "root"
+
+type TaskState int
+
+type NetState int
+
+const (
+	Normal TaskState = iota
+	TaskDisabled
+)
+
+const (
+	NetNormal NetState = iota
+	NetDisabled
+)
+
 type CmdType string
 
 const (
@@ -23,6 +41,6 @@ const (
 type CmdState string
 
 const (
-	LotusState = "lotus-state"
-	HardwareState ="hardware-state"
+	LotusState    = "lotus-state"
+	HardwareState = "hardware-state"
 )

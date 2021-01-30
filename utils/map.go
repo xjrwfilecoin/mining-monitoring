@@ -81,7 +81,7 @@ func StructToMapByJson(obj interface{}) map[string]interface{} {
 	if err != nil {
 		return m
 	}
-	err = json.Unmarshal(bytes, &m)
+	err = json.Unmarshal(bytes, m)
 	if err != nil {
 		return m
 	}

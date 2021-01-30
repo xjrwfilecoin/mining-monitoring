@@ -32,26 +32,9 @@ func ListenAndServe(cfg *model.RuntimeConfig,server *socket.Server) {
 	gin.SetMode(gin.ReleaseMode)
 	httpRouter := gin.New()
 	httpRouter.Use(cors())
-	httpRouter.Use(log.MyGinLogger(cfg.LogPath))
+	//httpRouter.Use(log.MyGinLogger(cfg.LogPath))
 	httpRouter.Use(gin.Recovery())
 	UseApiV1(httpRouter,server)
-	// 静态资源目录
-	//webRootDir := "./webroot"
-	//if s, err := os.Stat(webRootDir); err != nil || !s.IsDir() {
-	//	if err != nil {
-	//		log.Logger.Fatalln("静态资源目录没创建...", err.Error())
-	//	}
-	//}
-	//
-	//// 模板目录
-	//templatePath := "./webroot/templates/"
-	//if s, err := os.Stat(templatePath); err != nil || !s.IsDir() {
-	//	if err != nil {
-	//		log.Logger.Fatalln("html 模板目录没有创建...", err.Error())
-	//	}
-	//}
-	//httpRouter.LoadHTMLGlob("./webroot/templates/*")
-	//httpRouter.StaticFS("/static", http.Dir(webRootDir))
 	httpSever := &http.Server{
 		Addr:           cfg.HTTPListen,
 		Handler:        httpRouter,

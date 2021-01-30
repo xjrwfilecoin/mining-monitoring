@@ -123,7 +123,6 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 
 	workerList := utils.StructToMapByJson(m.WorkerList.Data)
 	result := MergeJobsAndHardwareV1(workerList, jobsInfo, hostHardwareMap)
-
 	response := utils.MergeMaps(minerInfo, result)
 	return response
 }

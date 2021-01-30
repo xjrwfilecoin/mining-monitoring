@@ -6,7 +6,6 @@ import (
 	"mining-monitoring/net/socket"
 	"mining-monitoring/shellParsing"
 	"sync"
-	"time"
 )
 
 type Manager struct {
@@ -34,15 +33,7 @@ func (m *Manager) GetMinerInfo() interface{} {
 	return info
 }
 
-func (m *Manager) test() {
-	ticker := time.NewTicker(5 * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			m.GetMinerInfo()
-		}
-	}
-}
+
 
 func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 	for {
@@ -58,8 +49,6 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 			}
 			diffData := minerInfo.updateData(data)
 			m.sendSign <- diffData
-		default:
-
 		}
 	}
 }
@@ -72,8 +61,6 @@ func (m *Manager) Send() {
 				log.Debug("send diff map:  ", diffData)
 				socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
 			}
-
-		default:
 
 		}
 	}

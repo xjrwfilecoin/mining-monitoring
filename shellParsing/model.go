@@ -91,10 +91,13 @@ type NetIO struct {
 }
 
 type WorkerInfo struct {
-	HostName string
-	IP       string
-	Id       string
-	GPU      int
+	HostName  string    `json:"hostName"`
+	TaskType  []string  `json:"taskType"`
+	TaskState TaskState `json:"taskState"`
+	NetState  NetState  `json:"netState"`
+	IP        string    `json:"ip"`
+	Id        string    `json:"id"`
+	GPU       int       `json:"gpu"`
 }
 
 type P map[string]interface{}
@@ -116,6 +119,11 @@ type MinerInfo struct {
 	RecoverySectors  string `json:"recoverySectors"`  // 恢复中扇区
 	DeletedSectors   string `json:"deletedSectors"`   // 删除扇区
 	FailSectors      string `json:"failSectors"`      // 失败扇区
+
+	ExpectBlock    string `json:"expectBlock"`    //  期望出块
+	MinerAvailable string `json:"minerAvailable"` //  miner可用余额
+	PreCommitWait  string `json:"preCommitWait"`  //  preCommitWait
+	CommitWait     string `json:"commitWait"`     //  commitWait
 
 }
 

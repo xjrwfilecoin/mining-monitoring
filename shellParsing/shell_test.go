@@ -16,26 +16,22 @@ worker     t07568    t3xd3xmwl...  other  14.695889803059827041 FIL
 control-0  t0116299  t3qsi32gm...  post   5.00000000001 FIL
 `
 
-var postStr001 =`
+var postStr001 = `
 owner      t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
 worker     t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
 control-0  t0116299  t3qsi32gm...  \033[32m post \033[0m   \033[31m 5.00000000001 FIL \033[0m
 `
 
-
 var postStr01 = `
 \033[31m 5.00000000001 FIL \033[0m
 `
 
-func TestPost002(t *testing.T){
+func TestPost002(t *testing.T) {
 	postBalance := postBalanceTestReg.FindAllStringSubmatch(postStr001, 1)
 
 	fmt.Println(postBalance)
 	fmt.Println("PostBalance:", getRegexValue(postBalance))
 }
-
-
-
 
 var src = `build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
 localIP:  172.70.16.201
@@ -71,6 +67,7 @@ Sectors:
         WaitSeed: 14
         Committing: 63
         CommitWait: 2
+		PreCommitWait: 10
         FinalizeSector: 82
         Removed: 316
         FailedUnrecoverable: 323
@@ -100,8 +97,8 @@ func TestShellMinerInfo(t *testing.T) {
 	fmt.Println("TotalSectors: ", getRegexValue(totalSectors))
 
 	effectSectors := effectSectorReg.FindAllStringSubmatch(src, 2)
-	fmt.Println(effectSectors)
-	fmt.Println("effectSectors: ", getRegexValueByIndex(effectSectors,1,1))
+
+	fmt.Println("effectSectors: ", getRegexValueByIndex(effectSectors, 1, 1))
 
 	errorsSectors := errorSectorReg.FindAllStringSubmatch(src, 1)
 	fmt.Println("errorsSectors: ", getRegexValue(errorsSectors))
@@ -117,6 +114,18 @@ func TestShellMinerInfo(t *testing.T) {
 
 	preCommitFailed := preCommitFailedReg.FindAllStringSubmatch(src, 1)
 	fmt.Println("preCommitFailed: ", getRegexValue(preCommitFailed))
+
+	expectBlock := expectBlockReg.FindAllStringSubmatch(src, 1)
+	fmt.Println("expectBlock: ", getRegexValue(expectBlock))
+
+	commitWait := commitWaitReg.FindAllStringSubmatch(src, 1)
+	fmt.Println("commitWait: ", getRegexValue(commitWait))
+
+	PreCommitWait := preCommitWaitReg.FindAllStringSubmatch(src, 1)
+	fmt.Println("PreCommitWait: ", getRegexValue(PreCommitWait))
+
+	available := availableReg.FindAllStringSubmatch(src, 1)
+	fmt.Println("available: ", getRegexValue(available))
 
 }
 
@@ -438,36 +447,38 @@ func TestParseMinerInfo(t *testing.T) {
 var testStr = `{"deletedSectors":"1","effectivePower":"0","effectiveSectors":"0","errorSectors":"0","failSectors":"0","hardwareInfo":{"worker01":{"cpuLoad":"14.73","cpuTemper":"+41.1°C","diskR":"906.67M/s","diskW":"163.63M/s","gpuInfo":{"0":{"name":"0","temp":"91C","use":"100%"}},"hostName":"worker01","netIO":{"eno1":{"name":"eno1","rx":"1.27","tx":"2.90"},"eno2":{"name":"eno2","rx":"0.00","tx":"0.00"},"enp2s0f0np0":{"name":"enp2s0f0np0","rx":"0.00","tx":"0.00"},"enp2s0f1np1":{"name":"enp2s0f1np1","rx":"0.00","tx":"0.00"},"lo":{"name":"lo","rx":"0.00","tx":"0.00"}},"totalMemory":"503G","useDisk":"40%","useMemory":"319G"}},"jobs":{"17":{"hostName":"worker01","id":"d7fd42c9","sector":"17","state":"running","task":"PC1","time":"17m48s","worker":"98c441ab"},"40":{"hostName":"worker01","id":"f5d60859","sector":"40","state":"running","task":"PC2","time":"20m17.7s","worker":"98c441ab"},"47":{"hostName":"worker01","id":"4fda8ea1","sector":"47","state":"running","task":"PC1","time":"13m17.7s","worker":"98c441ab"},"48":{"hostName":"worker01","id":"eba6ef90","sector":"48","state":"running","task":"PC1","time":"16m17.9s","worker":"98c441ab"},"49":{"hostName":"worker01","id":"d3283f2f","sector":"49","state":"running","task":"PC1","time":"19m18s","worker":"98c441ab"},"50":{"hostName":"worker01","id":"c1309585","sector":"50","state":"running","task":"PC1","time":"14m48s","worker":"98c441ab"},"51":{"hostName":"worker01","id":"53185af0","sector":"51","state":"running","task":"PC1","time":"11m47s","worker":"98c441ab"}},"messageNums":9,"minerBalance":"0","minerId":"t0114613","pledgeBalance":"0","postBalance":"0","recoverySectors":"0","timestamp":1610171829,"totalSectors":"52","workerBalance":"39.522FIL"}`
 
 var minerWorkers = `
-Worker 15331774-c8aa-4e5a-97e7-348f36af018b, host worker01
-	CPU:  [||||||||||||||||||||||||                                        ] 3/8 core(s) in use
-	RAM:  [||||||||||||||||||||||||||||                                    ] 44% 5.235 GiB/11.67 GiB
-	VMEM: [||||||||||||||||||||||||||||                                    ] 44% 5.235 GiB/11.67 GiB
-Worker 486cf314-5e60-4d62-bcc4-189ff4fc7bf8, host worker04
-	CPU:  [                                                                ] 0/8 core(s) in use
-	RAM:  [|||||||||||||||||||||||||||||                                   ] 46% 5.439 GiB/11.67 GiB
-	VMEM: [|||||||||||||||||||||||||||||                                   ] 46% 5.439 GiB/11.67 GiB
-Worker 74cdd5f7-08b1-4f0f-8e25-ef1b511743f6, host worker02
-	CPU:  [||||||||                                                        ] 1/8 core(s) in use
-	RAM:  [|||||||||||||||||||||||||||||                                   ] 45% 5.291 GiB/11.67 GiB
-	VMEM: [|||||||||||||||||||||||||||||                                   ] 45% 5.291 GiB/11.67 GiB
-Worker ae805414-0918-48fa-b17c-1212acebccd3, host worker03
-	CPU:  [                                                                ] 0/8 core(s) in use
-	RAM:  [|||||||||||||||||||||||||||||                                   ] 45% 5.314 GiB/11.67 GiB
-	VMEM: [|||||||||||||||||||||||||||||                                   ] 45% 5.314 GiB/11.67 GiB
-Worker d9dc590c-0131-4dd2-b9f6-43ffaed5d268, host worker06
-	CPU:  [                                                                ] 0/8 core(s) in use
-	RAM:  [||||||||||||||||||||||||||||||                                  ] 47% 5.555 GiB/11.67 GiB
-	VMEM: [||||||||||||||||||||||||||||||                                  ] 47% 5.555 GiB/11.67 GiB
-Worker edd1ea93-c135-43e4-aad6-202143607b15, host 
-	CPU:  [                                                                ] 0/8 core(s) in use
-	RAM:  [|||||||||||||||||||||||||||                                     ] 42% 4.964 GiB/11.67 GiB
-	VMEM: [|||||||||||||||||||||||||||                                     ] 42% 4.964 GiB/11.67 GiB
-	GPU: GeForce RTX 3060 Ti, not used
-Worker f1d9037a-7063-43ba-ab4b-65c65deacf0d, host worker05
-	CPU:  [                                                                ] 0/8 core(s) in use
-	RAM:  [||||||||||||||||||||||||||||||                                  ] 47% 5.553 GiB/11.67 GiB
-	VMEM: [||||||||||||||||||||||||||||||                                  ] 47% 5.553 GiB/11.67 GiB
-`
+Worker 0042426f-fcb5-4872-a6e5-58108b61ea8b, host ya-node111 (disabled) tasks AP|C1|PC1|PC2-0
+        CPU:  [|||||                                                           ] 4/48 core(s) in use
+        RAM:  [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% 481.8 GiB/503.4 GiB
+        VMEM: [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 108% 545.8 GiB/503.4 GiB
+        GPU: GeForce RTX 3060 Ti, used
+Worker 0cb8f1a3-ed67-4b0b-86fd-a5535b3ae9fe, host ya-node102 (disabled) tasks AP|C1|PC1|PC2-0
+        CPU:  [|||||                                                           ] 4/48 core(s) in use
+        RAM:  [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% 481.7 GiB/503.4 GiB
+        VMEM: [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 108% 545.7 GiB/503.4 GiB
+        GPU: GeForce RTX 3060 Ti, used
+Worker 44fdd58f-0c5d-4a99-9d9b-69e2537029c5, host ya-node98-miner tasks RD
+        CPU:  [                                                                ] 0/48 core(s) in use
+        RAM:  [||||||                                                          ] 9% 37.66 GiB/377.6 GiB
+        VMEM: [||||||                                                          ] 9% 37.66 GiB/379.6 GiB
+        GPU: GeForce RTX 2080 Ti, not used
+Worker 48d674a7-62a2-4044-b7e5-0b8f4195ebc7, host ya-node87 (disabled) tasks C2
+        CPU:  [                                                                ] 0/32 core(s) in use
+        RAM:  [                                                                ] 0% 3.153 GiB/377.6 GiB
+        VMEM: [                                                                ] 0% 3.153 GiB/377.6 GiB
+        GPU: GeForce RTX 3080, not used
+        GPU: GeForce RTX 3080, not used
+Worker 5403b7bd-b126-4aa6-96bf-5e92ec2ad80a, host ya-node109 tasks AP|C1|PC1|PC2-0
+        CPU:  [|||||                                                           ] 4/48 core(s) in use
+        RAM:  [||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||    ] 95% 481.7 GiB/503.4 GiB
+        VMEM: [|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||| ] 108% 545.7 GiB/503.4 GiB
+        GPU: GeForce RTX 3060 Ti, used
+Worker 6770dc35-a179-4c4e-9736-d2da32b36be9, host ya-node93 tasks C2
+        CPU:  [                                                                ] 0/32 core(s) in use
+        RAM:  [                                                                ] 0% 3.125 GiB/377.6 GiB
+        VMEM: [                                                                ] 0% 3.125 GiB/377.6 GiB
+        GPU: GeForce RTX 3080, not used
+        GPU: GeForce RTX 3080, not used`
 
 func TestMinerWorkers(t *testing.T) {
 	reader := bufio.NewReader(bytes.NewBuffer([]byte(minerWorkers)))
@@ -479,12 +490,20 @@ func TestMinerWorkers(t *testing.T) {
 			break
 		}
 		if strings.HasPrefix(line, "Worker") {
+			taskState := Normal
+			if strings.Contains(line, "disabled") {
+				taskState = TaskDisabled
+			}
+			line = strings.ReplaceAll(line, "(disabled)", "")
+			fmt.Println(line)
 			fields := strings.Fields(line)
-			if len(fields) < 4 {
+			fmt.Println(len(fields))
+			if len(fields) < 6 {
 				continue
 			}
 			preHostName = fields[3]
-			param[fields[3]] = &WorkerInfo{HostName: fields[3], Id: fields[1]}
+			hostType := strings.Split(fields[5], "|")
+			param[fields[3]] = &WorkerInfo{HostName: fields[3], TaskState: taskState, Id: fields[1], TaskType: hostType}
 
 		} else if strings.Contains(line, "GPU") {
 			workerInfo, ok := param[preHostName]

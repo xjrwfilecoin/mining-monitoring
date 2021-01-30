@@ -23,7 +23,7 @@ func BroadCaseMsg(namespace, room, event string, obj interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-	log.Info("broadCast: ", string(bytes))
+	log.Debug("broadCast: ", string(bytes))
 	SServer.broadcastMessage(namespace, room, event, cmd)
 }
 

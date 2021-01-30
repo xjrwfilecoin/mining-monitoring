@@ -20,6 +20,18 @@ var deletedSectorReg = regexp.MustCompile(`Removed:[\s]+([\d]*)`)
 var failSectorReg = regexp.MustCompile(`PreCommitFailed:[\s]+([\d]*)`)
 var preCommitFailedReg = regexp.MustCompile(`PreCommitFailed: ([\d]*)`)
 
+var expectBlockReg = regexp.MustCompile(`Expected block win rate:[\s]+([\d]*\.*[\d]*\/day).*`)
+
+var commitWaitReg = regexp.MustCompile(`CommitWait:[\s]+([\d]*)`)
+
+var preCommitWaitReg = regexp.MustCompile(`PreCommitWait:[\s]+([\d]*)`)
+
+var availableReg = regexp.MustCompile(`Available:[\s]+([\d]*.*[\d]*.*FIL)`)
+
+
+
+
+
 // post
 var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`)
 

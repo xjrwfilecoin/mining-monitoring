@@ -29,11 +29,11 @@ func Run(cfgPath string) error {
 	if err != nil {
 		return err
 	}
-
 	ShellManager, err = shellParsing.NewManager()
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
+	defer ShellManager.Close()
 	sign := make(chan shellParsing.CmdData, 100)
 	manager := store.NewManager()
 
@@ -75,7 +75,6 @@ func Run(cfgPath string) error {
 	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
 	return nil
 }
-
 
 // DefExitFunc 缺省信号退出函数
 func DefExitFunc() {

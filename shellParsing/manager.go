@@ -5,8 +5,7 @@ import (
 )
 
 type Manager struct {
-	shellParse  *ShellParse
-
+	shellParse *ShellParse
 }
 
 func (m *Manager) Run(cmd chan CmdData) {
@@ -15,6 +14,9 @@ func (m *Manager) Run(cmd chan CmdData) {
 	go m.shellParse.Send()
 }
 
+func (m *Manager) Close() {
+	m.shellParse.Close()
+}
 
 func NewManager() (*Manager, error) {
 	_, err := log.MyLogicLogger("./log")
@@ -22,6 +24,6 @@ func NewManager() (*Manager, error) {
 		return nil, err
 	}
 	return &Manager{
-		shellParse:  NewShellParse(),
+		shellParse: NewShellParse(),
 	}, nil
 }
