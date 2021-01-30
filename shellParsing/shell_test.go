@@ -17,9 +17,9 @@ control-0  t0116299  t3qsi32gm...  post   5.00000000001 FIL
 `
 
 var postStr001 = `
-owner      t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
-worker     t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
-control-0  t0116299  t3qsi32gm...  \033[32m post \033[0m   \033[31m 98.565454456329164202 FIL \033[0m
+owner      t07568    t3xd3xmwl...  [33mother[0m  [33m14.695825071182304616 FIL[0m  
+worker     t07568    t3xd3xmwl...  [33mother[0m  [33m14.695825071182304616 FIL[0m  
+control-0  t0116526  t3qd7nng7...  [32mpost[0m   [31m1.11 FIL[0m    
 `
 
 
