@@ -85,7 +85,7 @@ func (sp *ShellParse) getWorkCmdList(hostName string, gpuEnable bool) []ShellCmd
 }
 
 func (sp *ShellParse) doMinerInfo() {
-	ticker := time.NewTicker(90 * time.Second)
+	ticker := time.NewTicker(120 * time.Second)
 	cmd := NewLotusShellCmd(sp.Miners.MinerId, "lotus-miner", LotusMinerInfoCmd, []string{"info"})
 	defer ticker.Stop()
 	for {
@@ -105,7 +105,7 @@ func (sp *ShellParse) doWorkers() {
 	if err := recover(); err != nil {
 		log.Error(err)
 	}
-	ticker := time.NewTicker(120 * time.Second)
+	ticker := time.NewTicker(50 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -122,6 +122,7 @@ func (sp *ShellParse) doWorkers() {
 }
 
 func (sp *ShellParse) PingWorkers() {
+	res := make(map[string]interface{})
 	for i := 0; i < len(sp.Workers); i++ {
 		worker := sp.Workers[i]
 		execInfo := fmt.Sprintf(`root@%v`, worker.HostName)
@@ -132,22 +133,20 @@ func (sp *ShellParse) PingWorkers() {
 		if err != nil {
 			if strings.Contains(err.Error(), "exit") {
 				worker.NetState = NetDisabled
+			} else {
+				worker.NetState = NetNormal
 			}
 			log.Error("ping workers: ", err.Error())
 		}
+		res[worker.HostName] = utils.StructToMapByJson(worker)
 	}
-	sp.cmdSign <- NewCmdData("", sp.Miners.MinerId, LotusMinerWorkers, LotusState, sp.Workers)
+	sp.cmdSign <- NewCmdData("", sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
 }
 
 func (sp *ShellParse) getWorkerList() error {
 	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
 	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
-		res := make(map[string]interface{})
-		for i := 0; i < len(workers); i++ {
-			worker := workers[i]
-			res[worker.HostName] = utils.StructToMapByJson(worker)
-		}
 		sp.Lock()
 		sp.Workers = workers
 		sp.Unlock()
@@ -186,8 +185,10 @@ func (sp *ShellParse) runWorkerCmdList(worker *WorkerInfo, sing chan CmdData) {
 	cmdList := sp.getWorkCmdList(worker.HostName, worker.GPU != 0)
 	for i := 0; i < len(cmdList); i++ {
 		cmd := cmdList[i]
-		fn := sp.CmdParseMap[cmd.CmdType]
-		go sp.processTask(cmd, sing, fn)
+		if fn, ok := sp.CmdParseMap[cmd.CmdType]; ok {
+			go sp.processTask(cmd, sing, fn)
+		}
+
 	}
 }
 
@@ -263,7 +264,7 @@ func (sp *ShellParse) InitMinerInfo() error {
 }
 
 func (sp *ShellParse) miningInfo() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 	cmdList := sp.getMinerCmdList(sp.Miners.MinerId)
 	defer ticker.Stop()
 	for {
@@ -527,7 +528,7 @@ func (sp *ShellParse) GetMinerWorkersV2(input string) []*WorkerInfo {
 			}
 			hostType := strings.Split(fields[5], "|")
 			preHostIndex = preHostIndex + 1
-			res = append(res, &WorkerInfo{HostName: fields[3], TaskState: taskState, Id: fields[1], TaskType: hostType})
+			res = append(res, &WorkerInfo{HostName: fields[3], TaskState: taskState, TaskType: hostType})
 		} else if strings.Contains(line, "GPU") {
 			if len(res) != 0 && len(res) == preHostIndex+1 {
 				workerInfo := res[preHostIndex]

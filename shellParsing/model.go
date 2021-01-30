@@ -95,8 +95,8 @@ type WorkerInfo struct {
 	TaskType  []string  `json:"taskType"`
 	TaskState TaskState `json:"taskState"`
 	NetState  NetState  `json:"netState"`
-	IP        string    `json:"ip"`
-	Id        string    `json:"id"`
+	//IP        string    `json:"ip"`
+	//Id        string    `json:"id"`
 	GPU       int       `json:"gpu"`
 }
 

@@ -146,7 +146,12 @@ func JobsToArrayV1(param map[string]interface{}) map[string]interface{} {
 func MergeJobsAndHardwareV1(workers, jobs map[string]interface{}, hardwareInfoMap map[string]map[string]interface{}) map[string]interface{} {
 	param := make(map[string]interface{})
 	var workerList []map[string]interface{}
-	for hostName, _ := range workers {
+	for hostName, worker := range workers {
+		workerMap, ok := worker.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
 		job, jOk := jobs[hostName]
 		hardware, hOk := hardwareInfoMap[hostName]
 		if jOk {
@@ -156,16 +161,16 @@ func MergeJobsAndHardwareV1(workers, jobs map[string]interface{}, hardwareInfoMa
 			}
 
 			if hOk {
-				workerList = append(workerList, utils.MergeMaps(tJob, hardware))
+				workerList = append(workerList, utils.MergeMaps(tJob, hardware, workerMap))
 			} else {
-				workerList = append(workerList, fixHardWare(tJob))
+				workerList = append(workerList, utils.MergeMaps(fixHardWare(tJob), workerMap))
 			}
 		} else {
 			newEmptyInfo := NewEmptyInfo(hostName)
 			if hOk {
-				workerList = append(workerList, utils.MergeMaps(newEmptyInfo, hardware))
+				workerList = append(workerList, utils.MergeMaps(newEmptyInfo, hardware, workerMap))
 			} else {
-				workerList = append(workerList, newEmptyInfo)
+				workerList = append(workerList, utils.MergeMaps(newEmptyInfo, workerMap))
 			}
 
 		}
