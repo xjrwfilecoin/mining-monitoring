@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	cmd := exec.Command("sshpass", "-p", "", "ssh", "root@worker01", "free", "-h")
+	cmd := exec.Command("lotus-miner", "actor","control","list")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("error: ",err.Error())

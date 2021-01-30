@@ -33,7 +33,7 @@ var availableReg = regexp.MustCompile(`Available:[\s]+([\d]*.*[\d]*.*FIL)`)
 
 
 // post
-var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`)
+var postBalanceTestReg = regexp.MustCompile(`control.*post.*[\s]+([\d]*\.[\d]*.*FIL)`)
 
 // hardware info
 var cpuTemperatureRTdieReg = regexp.MustCompile(`Tdie:[\s]*(.*[\d]*.*[\d]*.*C) `)

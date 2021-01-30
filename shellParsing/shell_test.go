@@ -19,12 +19,9 @@ control-0  t0116299  t3qsi32gm...  post   5.00000000001 FIL
 var postStr001 = `
 owner      t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
 worker     t07568    t3xd3xmwl...  other  14.695889803059827041 FIL  
-control-0  t0116299  t3qsi32gm...  \033[32m post \033[0m   \033[31m 5.00000000001 FIL \033[0m
+control-0  t0116299  t3qsi32gm...  \033[32m post \033[0m   \033[31m 98.565454456329164202 FIL \033[0m
 `
 
-var postStr01 = `
-\033[31m 5.00000000001 FIL \033[0m
-`
 
 func TestPost002(t *testing.T) {
 	postBalance := postBalanceTestReg.FindAllStringSubmatch(postStr001, 1)
@@ -503,7 +500,7 @@ func TestMinerWorkers(t *testing.T) {
 			}
 			preHostName = fields[3]
 			hostType := strings.Split(fields[5], "|")
-			param[fields[3]] = &WorkerInfo{HostName: fields[3], TaskState: taskState, Id: fields[1], TaskType: hostType}
+			param[fields[3]] = &WorkerInfo{HostName: fields[3], TaskState: taskState, TaskType: hostType}
 
 		} else if strings.Contains(line, "GPU") {
 			workerInfo, ok := param[preHostName]

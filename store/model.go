@@ -56,12 +56,17 @@ func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
 		return nil
 	}
 
+
+
+
+
 	m.Lock()
 	defer m.Unlock()
 	oldMap, ok := m.DataMap[id]
 	newMap := utils.StructToMapByJson(obj.Data)
 	diffMap := newMap
 	m.DataMap[id] = newMap
+
 	if ok {
 		if obj.CmdType == shellParsing.LotusMinerJobs || obj.CmdType == shellParsing.SarCmd || obj.CmdType == shellParsing.GpuCmd {
 			if !utils.MapIsDiff(oldMap, newMap) { // 数据格式前端为array，没有变化，不用推数据
@@ -90,12 +95,10 @@ func (m *MinerInfo) getMinerInfo(minerId string) interface{} {
 	jobsInfo := make(map[string]interface{})
 	minerInfo := make(map[string]interface{})
 	for keyId, value := range m.DataMap {
-		//log.Error(keyId, value)
 		if keyId.CmdState == shellParsing.LotusState {
 			if keyId.CmdType == shellParsing.LotusMinerJobs {
 				jobsInfo = JobsToArrayV1(value)
 			} else if keyId.CmdType == shellParsing.LotusMinerWorkers {
-
 			} else {
 				minerInfo = utils.MergeMaps(minerInfo, value)
 			}

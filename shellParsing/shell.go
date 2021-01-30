@@ -210,7 +210,7 @@ func (sp *ShellParse) getMiner() error {
 	minerInfoCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerInfoCmd, []string{"info"})
 	err := sp.execShellCmd(minerInfoCmd, func(input string) {
 		minerInfo := sp.getMinerInfo(input)
-		sp.cmdSign <- NewCmdData(minerInfo.MinerId, sp.Miners.MinerId, LotusMinerInfoCmd, LotusState, minerInfo)
+		sp.cmdSign <- NewCmdData(minerInfo.MinerId, minerInfo.MinerId, LotusMinerInfoCmd, LotusState, minerInfo)
 		sp.Miners = Miner{MinerId: minerInfo.MinerId,}
 	})
 	return err
