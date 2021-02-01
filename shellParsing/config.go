@@ -1,6 +1,6 @@
 package shellParsing
 
-var SSHPORT = "22"
+var SSHPORT = "22521"
 
 var SSHUSER = "root"
 
