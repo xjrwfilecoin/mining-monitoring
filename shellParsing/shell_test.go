@@ -264,6 +264,14 @@ Tue Jan 12 03:58:58 2021
 
 `
 
+
+
+
+
+
+
+
+
 func TestHardwareInfo(t *testing.T) {
 
 	cpuTemperature := getCpuTemper(hardwareInfo)

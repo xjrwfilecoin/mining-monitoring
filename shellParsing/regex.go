@@ -28,9 +28,10 @@ var preCommitWaitReg = regexp.MustCompile(`PreCommitWait:[\s]+([\d]*)`)
 
 var availableReg = regexp.MustCompile(`Available:[\s]+([\d]*.*[\d]*.*FIL)`)
 
-
-
-
+var PreCommit1Reg = regexp.MustCompile(`PreCommit1:[\s]+([\d]*)`)
+var PreCommit2Reg = regexp.MustCompile(`PreCommit2:[\s]+([\d]*)`)
+var WaitSeedReg = regexp.MustCompile(`WaitSeed:[\s]+([\d]*)`)
+var CommittingReg = regexp.MustCompile(`Committing:[\s]+([\d]*)`)
 
 // post
 var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`)
@@ -39,12 +40,10 @@ var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`
 var cpuTemperatureRTdieReg = regexp.MustCompile(`Tdie:[\s]*(.*[\d]*.*[\d]*.*C) `)
 var cpuTemperatureCoreReg = regexp.MustCompile(`Package id 0:[\s]*(.*[\d]*.[\d]*.*C) `)
 
-var netIOAverageReg =regexp.MustCompile(`Average:(.*)`)
+var netIOAverageReg = regexp.MustCompile(`Average:(.*)`)
 
 var gpuIdReg = regexp.MustCompile(`\|[\s]*[\d]+[\s]*(.*)N/A \|`)
 var gpuInfoReg = regexp.MustCompile(`\|(.*)Default \|`)
-
-
 
 var cpuLoadReg = regexp.MustCompile(`load average: ([\d]*.[\d]*),`)
 

@@ -85,9 +85,11 @@ type IoInfo struct {
 }
 
 type NetIO struct {
-	Name string `json:"name"`
-	Tx   string `json:"tx"`
-	Rx   string `json:"rx"`
+	Name  string `json:"name"`
+	Rxpck string `json:"rxpck"`
+	Txpck string `json:"txpck"`
+	Tx    string `json:"tx"`
+	Rx    string `json:"rx"`
 }
 
 type WorkerInfo struct {
@@ -97,7 +99,7 @@ type WorkerInfo struct {
 	NetState  NetState  `json:"netState"`
 	//IP        string    `json:"ip"`
 	//Id        string    `json:"id"`
-	GPU       int       `json:"gpu"`
+	GPU int `json:"gpu"`
 }
 
 type P map[string]interface{}
@@ -124,6 +126,11 @@ type MinerInfo struct {
 	MinerAvailable string `json:"minerAvailable"` //  miner可用余额
 	PreCommitWait  string `json:"preCommitWait"`  //  preCommitWait
 	CommitWait     string `json:"commitWait"`     //  commitWait
+
+	PreCommit1 string `json:"preCommit1"` //  PreCommit1
+	PreCommit2 string `json:"preCommit2"` //  PreCommit2
+	WaitSeed   string `json:"waitSeed"`   //  WaitSeed
+	Committing string `json:"committing"` //  Committing
 
 }
 

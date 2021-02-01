@@ -17,6 +17,7 @@ import (
 type ShellParse struct {
 	Workers      []*WorkerInfo
 	Miners       Miner
+	HostName     string
 	cmdSign      chan CmdData
 	CmdParseMap  map[CmdType]func(cmd ShellCmd, input string) CmdData
 	cmdHeartTime time.Duration // 秒
@@ -65,6 +66,18 @@ func (sp *ShellParse) getMinerCmdList(minerId string) []ShellCmd {
 	//cmdList = append(cmdList, NewLotusShellCmd(minerId, "lotus-miner", LotusMinerInfoCmd, []string{"info"}))
 	//cmdList = append(cmdList, NewLotusShellCmd(minerId, "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"}))
 	//cmdList = append(cmdList, NewLotusShellCmd(minerId, "lotus", LotusMpoolCmd, []string{"mpool", "pending"}))
+	return cmdList
+}
+
+func (sp *ShellParse) GetMinerHardwareCmdList(hostName string) []ShellCmd {
+	var cmdList []ShellCmd
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "sensors", SensorsCmd, []string{}))
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "uptime", UpTimeCmd, []string{}))
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "free", FreeHCmd, []string{"-h"}))
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "df", DfHCMd, []string{"-h"}))
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "sar", SarCmd, []string{"-n", "DEV", "1", "2"}))
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "iotop", IOCmd, []string{"-bn1", "|", "head", "-n", "2"}))
+	cmdList = append(cmdList, NewHardwareShellCmd(hostName, "nvidia-smi", GpuCmd, []string{}))
 	return cmdList
 }
 
@@ -225,7 +238,29 @@ func (sp *ShellParse) Send() {
 	go sp.miningInfo()
 	go sp.doMinerInfo()
 	go sp.doHardWareInfo()
+	//go sp.getMinerHardwareInfo()
 
+}
+
+// miner ssh本地，如果不做，自己获取
+func (sp *ShellParse) getMinerHardwareInfo() {
+	ticker := time.NewTicker(5 * time.Second)
+	cmdList := sp.GetMinerHardwareCmdList(sp.HostName)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			for i := 0; i < len(cmdList); i++ {
+				cmd := cmdList[i]
+				if fn, ok := sp.CmdParseMap[cmd.CmdType]; ok {
+					go sp.processTask(cmd, sp.cmdSign, fn)
+				}
+			}
+		case <-sp.closing:
+			return
+
+		}
+	}
 }
 
 func (sp *ShellParse) Init() error {
@@ -385,6 +420,15 @@ func (sp *ShellParse) getMinerInfo(data string) MinerInfo {
 	available := availableReg.FindAllStringSubmatch(data, 1)
 	minerInfo.MinerAvailable = getRegexValue(available)
 
+	PreCommit1 := PreCommit1Reg.FindAllStringSubmatch(data, 1)
+	minerInfo.PreCommit1 = getRegexValue(PreCommit1)
+	PreCommit2 := PreCommit2Reg.FindAllStringSubmatch(data, 1)
+	minerInfo.PreCommit2 = getRegexValue(PreCommit2)
+	WaitSeed := WaitSeedReg.FindAllStringSubmatch(data, 1)
+	minerInfo.WaitSeed = getRegexValue(WaitSeed)
+	Committing := CommittingReg.FindAllStringSubmatch(data, 1)
+	minerInfo.Committing = getRegexValue(Committing)
+
 	return minerInfo
 }
 
@@ -462,9 +506,11 @@ func getNetIOV2(data string) map[string]interface{} {
 			continue
 		}
 		netIO := NetIO{
-			Name: fields[1],
-			Rx:   fields[4],
-			Tx:   fields[5],
+			Name:  fields[1],
+			Rxpck: fields[2],
+			Txpck: fields[3],
+			Rx:    fields[4],
+			Tx:    fields[5],
 		}
 		param[fields[1]] = utils.StructToMapByJson(netIO)
 
@@ -525,6 +571,12 @@ func (sp *ShellParse) GetMinerWorkersV2(input string) []*WorkerInfo {
 			fmt.Println(len(fields))
 			if len(fields) < 6 {
 				continue
+			}
+
+			if strings.Contains(fields[5], "RD") {
+				sp.HostName = fields[3]
+				log.Debug("miner hostName: ", sp.HostName)
+
 			}
 			hostType := strings.Split(fields[5], "|")
 			preHostIndex = preHostIndex + 1
