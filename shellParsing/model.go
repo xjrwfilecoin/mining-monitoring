@@ -127,10 +127,11 @@ type MinerInfo struct {
 	PreCommitWait  string `json:"preCommitWait"`  //  preCommitWait
 	CommitWait     string `json:"commitWait"`     //  commitWait
 
-	PreCommit1 string `json:"preCommit1"` //  PreCommit1
-	PreCommit2 string `json:"preCommit2"` //  PreCommit2
-	WaitSeed   string `json:"waitSeed"`   //  WaitSeed
-	Committing string `json:"committing"` //  Committing
+	PreCommit1     string `json:"preCommit1"`      //  PreCommit1
+	PreCommit2     string `json:"preCommit2"`      //  PreCommit2
+	WaitSeed       string `json:"waitSeed"`        //  WaitSeed
+	Committing     string `json:"committing"`      //  Committing
+	FinalizeSector string `json:"finalizeSector"` //  finalizeSector
 
 }
 

@@ -3,6 +3,7 @@ package shellParsing
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ type ShellParse struct {
 
 func NewShellParse() *ShellParse {
 	return &ShellParse{
-		cmdSign:      make(chan CmdData, 1000),
+		cmdSign:      make(chan CmdData, 100),
 		CmdParseMap:  make(map[CmdType]func(cmd ShellCmd, input string) CmdData),
 		closing:      make(chan struct{}),
 		CmdMap:       make(map[CmdType]ShellCmd),
@@ -118,7 +119,7 @@ func (sp *ShellParse) doWorkers() {
 	if err := recover(); err != nil {
 		log.Error(err)
 	}
-	ticker := time.NewTicker(50 * time.Second)
+	ticker := time.NewTicker(120 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -172,7 +173,7 @@ func (sp *ShellParse) getWorkerList() error {
 }
 
 func (sp *ShellParse) doHardWareInfo() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(8 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -299,7 +300,7 @@ func (sp *ShellParse) InitMinerInfo() error {
 }
 
 func (sp *ShellParse) miningInfo() {
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(180 * time.Second)
 	cmdList := sp.getMinerCmdList(sp.Miners.MinerId)
 	defer ticker.Stop()
 	for {
@@ -429,6 +430,9 @@ func (sp *ShellParse) getMinerInfo(data string) MinerInfo {
 	Committing := CommittingReg.FindAllStringSubmatch(data, 1)
 	minerInfo.Committing = getRegexValue(Committing)
 
+	FinalizeSector := FinalizeSectorReg.FindAllStringSubmatch(data, 1)
+	minerInfo.FinalizeSector = getRegexValue(FinalizeSector)
+
 	return minerInfo
 }
 
@@ -502,7 +506,7 @@ func getNetIOV2(data string) map[string]interface{} {
 		if len(fields) < 9 {
 			continue
 		}
-		if strings.HasPrefix(fields[1], "lo") {
+		if strings.HasPrefix(fields[1], "lo") || strings.HasPrefix(fields[1], "bond") {
 			continue
 		}
 		netIO := NetIO{
@@ -566,17 +570,9 @@ func (sp *ShellParse) GetMinerWorkersV2(input string) []*WorkerInfo {
 				taskState = TaskDisabled
 			}
 			line = strings.ReplaceAll(line, "(disabled)", "")
-			fmt.Println(line)
 			fields := strings.Fields(line)
-			fmt.Println(len(fields))
 			if len(fields) < 6 {
 				continue
-			}
-
-			if strings.Contains(fields[5], "RD") {
-				sp.HostName = fields[3]
-				log.Debug("miner hostName: ", sp.HostName)
-
 			}
 			hostType := strings.Split(fields[5], "|")
 			preHostIndex = preHostIndex + 1
@@ -779,8 +775,10 @@ func getNetIO(data string) interface{} {
 }
 
 func (sp *ShellParse) ExecCmd(cmdName string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
 	log.Debug("exec cmd: ", cmdName, args)
-	cmd := exec.Command(cmdName, args...)
+	cmd := exec.CommandContext(ctx, cmdName, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", err

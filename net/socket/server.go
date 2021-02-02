@@ -13,9 +13,7 @@ import (
 	"net/http"
 )
 
-
 var SServer = NewServer()
-
 
 func BroadCaseMsg(namespace, room, event string, obj interface{}) {
 	cmd := ResponseCmd{Code: 1, Url: event, Message: "success", Body: obj,}
@@ -95,17 +93,33 @@ func (ss *Server) Close() error {
 
 func (ss *Server) Run() error {
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
-		log.Debug("socketIO client connect ", s.ID(), s.RemoteAddr(), )
+		log.Warn("socketIO client connect ", s.ID(), s.RemoteAddr(), )
 		s.Emit("message", "connected ")
 		return nil
 	})
 
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
 		log.Error("socketIo error ", e.Error())
+		if s != nil {
+			s.LeaveAll()
+			err := s.Close()
+			if err != nil {
+				log.Error(err.Error())
+
+			}
+		}
 	})
 
 	ss.server.OnDisconnect(ss.namespace, func(s socketio.Conn, reason string) {
 		log.Debug("socketIo client disConnect ", s.ID(), reason)
+		if s != nil {
+			s.LeaveAll()
+			err := s.Close()
+			if err != nil {
+				log.Error(err.Error())
+
+			}
+		}
 	})
 	return ss.server.Serve()
 
@@ -135,7 +149,6 @@ func NewServer() (*Server) {
 				},
 			},
 		})
-	//server, err := socketio.NewServer(nil)
 	if err != nil {
 		panic(fmt.Errorf("init socket-io server %v \n", err))
 	}

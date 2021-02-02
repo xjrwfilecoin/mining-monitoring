@@ -10,7 +10,9 @@ type Manager struct {
 
 func (m *Manager) Run(cmd chan CmdData) {
 
-	go m.shellParse.Receiver(cmd)
+	for i := 0; i < 100; i++ {
+		go m.shellParse.Receiver(cmd)
+	}
 	go m.shellParse.Send()
 }
 

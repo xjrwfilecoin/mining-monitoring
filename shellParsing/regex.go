@@ -32,6 +32,7 @@ var PreCommit1Reg = regexp.MustCompile(`PreCommit1:[\s]+([\d]*)`)
 var PreCommit2Reg = regexp.MustCompile(`PreCommit2:[\s]+([\d]*)`)
 var WaitSeedReg = regexp.MustCompile(`WaitSeed:[\s]+([\d]*)`)
 var CommittingReg = regexp.MustCompile(`Committing:[\s]+([\d]*)`)
+var FinalizeSectorReg = regexp.MustCompile(`FinalizeSector:[\s]+([\d]*)`)
 
 // post
 var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`)

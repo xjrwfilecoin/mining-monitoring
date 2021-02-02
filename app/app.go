@@ -12,6 +12,8 @@ import (
 	"mining-monitoring/service"
 	"mining-monitoring/shellParsing"
 	"mining-monitoring/store"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +23,12 @@ import (
 var ShellManager *shellParsing.Manager
 
 func Run(cfgPath string) error {
+
+	// just test
+	go func() {
+		http.ListenAndServe(":6060", nil)
+	}()
+
 	runtimeConfig, err := ReadCfg(cfgPath)
 	if err != nil {
 		return err
@@ -36,9 +44,11 @@ func Run(cfgPath string) error {
 	defer ShellManager.Close()
 	sign := make(chan shellParsing.CmdData, 100)
 	manager := store.NewManager()
-
-	go manager.Recv(sign)
-	go manager.Send()
+	defer manager.Close()
+	for i := 0; i < 100; i++ {
+		go manager.Recv(sign)
+		go manager.Send()
+	}
 	go ShellManager.Run(sign)
 	// 注册路由
 	minerInfo := service.NewMinerInfoService(manager, socket.SServer)

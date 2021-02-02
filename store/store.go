@@ -13,13 +13,20 @@ type Manager struct {
 	sendSign chan interface{}
 	sync.Mutex
 	MinerId string
+	closing chan struct{}
 }
 
 func NewManager() *Manager {
 	return &Manager{
 		Miners:   make(map[MinerId]*MinerInfo),
 		sendSign: make(chan interface{}, 100),
+		closing:  make(chan struct{}, 1),
 	}
+}
+
+func (m *Manager) Close() {
+	close(m.closing)
+	close(m.sendSign)
 }
 
 func (m *Manager) GetMinerInfo() interface{} {
@@ -32,8 +39,6 @@ func (m *Manager) GetMinerInfo() interface{} {
 	info := minerInfo.getMinerInfo(m.MinerId)
 	return info
 }
-
-
 
 func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 	for {
@@ -49,6 +54,8 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 			}
 			diffData := minerInfo.updateData(data)
 			m.sendSign <- diffData
+		case <-m.closing:
+			return
 		}
 	}
 }
@@ -59,8 +66,11 @@ func (m *Manager) Send() {
 		case diffData := <-m.sendSign:
 			if diffData != nil {
 				log.Debug("send diff map:  ", diffData)
-				socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
+				go socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
 			}
+
+		case <-m.closing:
+			return
 
 		}
 	}
