@@ -62,20 +62,21 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 	}
 }
 
-
-
-
-
 func (m *Manager) Send() {
+	canSend := true
 	for {
 		select {
 		case diffData := <-m.sendSign:
 			if diffData != nil {
 				log.Debug("send diff map:  ", diffData)
-				if socket.SServer.GetServer().Count() > 0 {
-					socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
-
+				if canSend {
+					canSend = false
+					if socket.SServer.GetServer().Count() > 0 {
+						socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
+					}
+					canSend = true
 				}
+
 			}
 
 		case <-m.closing:

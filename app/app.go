@@ -47,8 +47,8 @@ func Run(cfgPath string) error {
 	defer manager.Close()
 	for i := 0; i < 100; i++ {
 		go manager.Recv(sign)
-		go manager.Send()
 	}
+	go manager.Send()
 	go ShellManager.Run(sign)
 	// 注册路由
 	minerInfo := service.NewMinerInfoService(manager, socket.SServer)

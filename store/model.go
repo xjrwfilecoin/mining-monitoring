@@ -56,10 +56,6 @@ func (m *MinerInfo) updateData(obj shellParsing.CmdData) interface{} {
 		return nil
 	}
 
-
-
-
-
 	m.Lock()
 	defer m.Unlock()
 	oldMap, ok := m.DataMap[id]

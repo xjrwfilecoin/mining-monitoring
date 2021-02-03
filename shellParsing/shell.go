@@ -263,7 +263,7 @@ func (sp *ShellParse) Send() {
 	go sp.doWorkers()
 	go sp.miningInfo()
 	go sp.doMinerInfo()
-	go sp.doHardwareInfoV1()
+	go sp.doHardWareInfo()
 	//go sp.getMinerHardwareInfo()
 
 }
@@ -386,7 +386,7 @@ func (sp *ShellParse) WrapProcessTask(ctx context.Context, shellCmd <-chan Shell
 }
 
 func (sp *ShellParse) CanAddTask() bool {
-	return atomic.LoadInt64(&sp.cmdCount) < 400
+	return atomic.LoadInt64(&sp.cmdCount) < 350
 }
 
 func (sp *ShellParse) AddTaskCount() {
