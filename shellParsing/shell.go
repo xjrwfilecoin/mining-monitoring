@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,11 +27,12 @@ type ShellParse struct {
 	CmdMap       map[CmdType]ShellCmd
 	workerSign   chan Worker
 	sync.Mutex
+	cmdCount int64 //任务总数控制
 }
 
 func NewShellParse() *ShellParse {
 	return &ShellParse{
-		cmdSign:      make(chan CmdData, 100),
+		cmdSign:      make(chan CmdData, 150),
 		CmdParseMap:  make(map[CmdType]func(cmd ShellCmd, input string) CmdData),
 		closing:      make(chan struct{}),
 		CmdMap:       make(map[CmdType]ShellCmd),
@@ -121,10 +123,11 @@ func (sp *ShellParse) doWorkers() {
 	}
 	ticker := time.NewTicker(120 * time.Second)
 	defer ticker.Stop()
+	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
 	for {
 		select {
 		case <-ticker.C:
-			err := sp.getWorkerList()
+			err := sp.getWorkerList(minerWorkersCmd)
 			if err != nil {
 				log.Error("get worker info error: ", err.Error())
 			}
@@ -157,9 +160,9 @@ func (sp *ShellParse) PingWorkers() {
 	sp.cmdSign <- NewCmdData("", sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
 }
 
-func (sp *ShellParse) getWorkerList() error {
-	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
-	err := sp.execShellCmd(minerWorkersCmd, func(input string) {
+func (sp *ShellParse) getWorkerList(cmd ShellCmd) error {
+
+	err := sp.execShellCmd(cmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
 		sp.Lock()
 		sp.Workers = workers
@@ -172,6 +175,27 @@ func (sp *ShellParse) getWorkerList() error {
 	return nil
 }
 
+func (sp *ShellParse) doHardwareInfoV1() {
+	for {
+		select {
+		case <-sp.closing:
+			return
+		default:
+		}
+		sp.Lock()
+		workerList := sp.Workers
+		sp.Unlock()
+		ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+		for i := 0; i < len(workerList); i++ {
+			worker := workerList[i]
+			time.Sleep(100 * time.Millisecond)
+			sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
+		}
+		time.Sleep(8 * time.Second)
+
+	}
+}
+
 func (sp *ShellParse) doHardWareInfo() {
 	ticker := time.NewTicker(8 * time.Second)
 	defer ticker.Stop()
@@ -181,9 +205,10 @@ func (sp *ShellParse) doHardWareInfo() {
 			sp.Lock()
 			workerList := sp.Workers
 			sp.Unlock()
+			ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
 			for i := 0; i < len(workerList); i++ {
 				worker := workerList[i]
-				sp.runWorkerCmdList(worker, sp.cmdSign)
+				sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
 			}
 		case <-sp.closing:
 			return
@@ -192,7 +217,7 @@ func (sp *ShellParse) doHardWareInfo() {
 	}
 }
 
-func (sp *ShellParse) runWorkerCmdList(worker *WorkerInfo, sing chan CmdData) {
+func (sp *ShellParse) runWorkerCmdList(ctx context.Context, worker *WorkerInfo, sing chan CmdData) {
 	if worker == nil {
 		return
 	}
@@ -238,7 +263,7 @@ func (sp *ShellParse) Send() {
 	go sp.doWorkers()
 	go sp.miningInfo()
 	go sp.doMinerInfo()
-	go sp.doHardWareInfo()
+	go sp.doHardwareInfoV1()
 	//go sp.getMinerHardwareInfo()
 
 }
@@ -247,7 +272,7 @@ func (sp *ShellParse) Send() {
 func (sp *ShellParse) getMinerHardwareInfo() {
 	ticker := time.NewTicker(5 * time.Second)
 	cmdList := sp.GetMinerHardwareCmdList(sp.HostName)
-	defer ticker.Stop()
+	//defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
@@ -275,7 +300,8 @@ func (sp *ShellParse) Init() error {
 	if err != nil {
 		return err
 	}
-	err = sp.getWorkerList()
+	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
+	err = sp.getWorkerList(minerWorkersCmd)
 	if err != nil {
 		return err
 	}
@@ -344,7 +370,40 @@ func (sp *ShellParse) execShellCmd(cmd ShellCmd, fn func(input string)) error {
 	return nil
 }
 
+func (sp *ShellParse) WrapProcessTask(ctx context.Context, shellCmd <-chan ShellCmd, fn func(cmd ShellCmd, input string) CmdData) error {
+	for {
+		select {
+		case cmd := <-shellCmd:
+			err := sp.processTask(cmd, sp.cmdSign, fn)
+			if err != nil {
+				log.Error("wrapProcessTask: ", err.Error())
+			}
+		case <-ctx.Done():
+			return nil
+
+		}
+	}
+}
+
+func (sp *ShellParse) CanAddTask() bool {
+	return atomic.LoadInt64(&sp.cmdCount) < 400
+}
+
+func (sp *ShellParse) AddTaskCount() {
+	atomic.AddInt64(&sp.cmdCount, 1)
+}
+
+func (sp *ShellParse) DelTaskCount() {
+	atomic.AddInt64(&sp.cmdCount, -1)
+}
+
 func (sp *ShellParse) processTask(cmd ShellCmd, sign chan CmdData, fn func(cmd ShellCmd, input string) CmdData) error {
+	if !sp.CanAddTask() {
+		return nil
+	}
+	sp.AddTaskCount()
+	defer sp.DelTaskCount()
+
 	output, err := sp.ExecCmd(cmd.Name, cmd.Params...)
 	if err != nil {
 		log.Error("process task error ", cmd.CmdType, cmd.Name, cmd.HostName, err)
@@ -772,6 +831,18 @@ func getNetIO(data string) interface{} {
 		})
 	}
 	return NetIOes
+}
+
+func (sp *ShellParse) ExecCmdWithCtx(ctx context.Context, cmdName string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+	log.Debug("exec cmd: ", cmdName, args)
+	cmd := exec.CommandContext(ctx, cmdName, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
 }
 
 func (sp *ShellParse) ExecCmd(cmdName string, args ...string) (string, error) {

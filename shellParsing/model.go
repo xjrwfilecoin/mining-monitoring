@@ -2,6 +2,8 @@ package shellParsing
 
 import "time"
 
+
+
 type Job struct {
 	Id       string `json:"id"`
 	Sector   string `json:"sector"` //扇区Id

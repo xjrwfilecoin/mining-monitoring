@@ -1,5 +1,0 @@
-{
-  "LogPath": "./log/",
-  "HTTPListen": "0.0.0.0:9090",
-  "Debug": true
-}

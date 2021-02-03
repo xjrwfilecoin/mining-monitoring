@@ -1,7 +1,6 @@
 package socket
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
@@ -17,11 +16,6 @@ var SServer = NewServer()
 
 func BroadCaseMsg(namespace, room, event string, obj interface{}) {
 	cmd := ResponseCmd{Code: 1, Url: event, Message: "success", Body: obj,}
-	bytes, err := json.Marshal(cmd)
-	if err != nil {
-		log.Error(err.Error())
-	}
-	log.Debug("broadCast: ", string(bytes))
 	SServer.broadcastMessage(namespace, room, event, cmd)
 }
 
@@ -93,13 +87,13 @@ func (ss *Server) Close() error {
 
 func (ss *Server) Run() error {
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
-		log.Warn("socketIO client connect ", s.ID(), s.RemoteAddr(), )
+		log.Warn("socketIO client connect ", s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 		s.Emit("message", "connected ")
 		return nil
 	})
 
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
-		log.Error("socketIo error ", e.Error())
+		log.Error("socketIo error ", s.ID(),s.LocalAddr(),s.RemoteAddr(),e.Error())
 		if s != nil {
 			s.LeaveAll()
 			err := s.Close()
@@ -111,7 +105,7 @@ func (ss *Server) Run() error {
 	})
 
 	ss.server.OnDisconnect(ss.namespace, func(s socketio.Conn, reason string) {
-		log.Debug("socketIo client disConnect ", s.ID(), reason)
+		log.Error("socketIo client disConnect ", s.ID(), s.LocalAddr(), s.RemoteAddr(), reason)
 		if s != nil {
 			s.LeaveAll()
 			err := s.Close()
@@ -133,7 +127,7 @@ func (g GenId) NewID() string {
 	return utils.GetUUID()
 }
 
-func NewServer() (*Server) {
+func NewServer() *Server {
 	server, err := socketio.NewServer(
 		&engineio.Options{
 			Transports: []transport.Transport{

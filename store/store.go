@@ -11,7 +11,7 @@ import (
 type Manager struct {
 	Miners   map[MinerId]*MinerInfo
 	sendSign chan interface{}
-	sync.Mutex
+	sync.RWMutex
 	MinerId string
 	closing chan struct{}
 }
@@ -30,9 +30,9 @@ func (m *Manager) Close() {
 }
 
 func (m *Manager) GetMinerInfo() interface{} {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
 	minerInfo, ok := m.Miners[MinerId(m.MinerId)]
+	defer m.RUnlock()
 	if !ok {
 		return nil
 	}
@@ -47,7 +47,9 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 			m.MinerId = data.MinerId
 			log.Debug("store rec data: ", data)
 			minerId := MinerId(data.MinerId)
+			m.RLock()
 			minerInfo, ok := m.Miners[minerId]
+			m.RUnlock()
 			if !ok {
 				minerInfo = NewMinerInfo()
 				m.Miners[minerId] = minerInfo
@@ -60,13 +62,20 @@ func (m *Manager) Recv(obj chan shellParsing.CmdData) {
 	}
 }
 
+
+
+
+
 func (m *Manager) Send() {
 	for {
 		select {
 		case diffData := <-m.sendSign:
 			if diffData != nil {
 				log.Debug("send diff map:  ", diffData)
-				go socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
+				if socket.SServer.GetServer().Count() > 0 {
+					socket.BroadCaseMsg(config.DefaultNamespace, config.DefaultRoom, config.SubMinerInfo, diffData)
+
+				}
 			}
 
 		case <-m.closing:
