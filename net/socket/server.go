@@ -5,7 +5,6 @@ import (
 	"github.com/googollee/go-socket.io"
 	"github.com/googollee/go-socket.io/engineio"
 	"github.com/googollee/go-socket.io/engineio/transport"
-	"github.com/googollee/go-socket.io/engineio/transport/polling"
 	"github.com/googollee/go-socket.io/engineio/transport/websocket"
 	"mining-monitoring/log"
 	"mining-monitoring/utils"
@@ -93,8 +92,9 @@ func (ss *Server) Run() error {
 	})
 
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
-		log.Error("socketIo error ", s.ID(),s.LocalAddr(),s.RemoteAddr(),e.Error())
+		log.Error("socketIo error ", e.Error())
 		if s != nil {
+			log.Error("socketIo error： info: ", s.ID(), s.LocalAddr(), s.RemoteAddr())
 			s.LeaveAll()
 			err := s.Close()
 			if err != nil {
@@ -102,11 +102,13 @@ func (ss *Server) Run() error {
 
 			}
 		}
+
 	})
 
 	ss.server.OnDisconnect(ss.namespace, func(s socketio.Conn, reason string) {
-		log.Error("socketIo client disConnect ", s.ID(), s.LocalAddr(), s.RemoteAddr(), reason)
+		log.Error("socketIo client disConnect ", reason)
 		if s != nil {
+			log.Error("socketIO client disConnect: ", s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 			s.LeaveAll()
 			err := s.Close()
 			if err != nil {
@@ -128,15 +130,11 @@ func (g GenId) NewID() string {
 }
 
 func NewServer() *Server {
+
 	server, err := socketio.NewServer(
 		&engineio.Options{
 			Transports: []transport.Transport{
 				&websocket.Transport{
-					CheckOrigin: func(r *http.Request) bool {
-						return true
-					},
-				},
-				&polling.Transport{
 					CheckOrigin: func(r *http.Request) bool {
 						return true
 					},
