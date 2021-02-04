@@ -2,14 +2,14 @@ package service
 
 import (
 	"fmt"
+	cache "mining-monitoring/cache"
 	"mining-monitoring/config"
 	"mining-monitoring/log"
 	"mining-monitoring/net/socket"
-	"mining-monitoring/store"
 )
 
 type MinerInfoService struct {
-	storageManager *store.Manager
+	storageManager *cache.Manager
 	socketServer *socket.Server
 }
 
@@ -33,7 +33,7 @@ func (m *MinerInfoService) MinerInfo(c *socket.Context) {
 
 }
 
-func NewMinerInfoService(sm *store.Manager, server *socket.Server) IMinerInfo {
+func NewMinerInfoService(sm *cache.Manager, server *socket.Server) IMinerInfo {
 	return &MinerInfoService{
 		socketServer: server,
 		storageManager: sm,

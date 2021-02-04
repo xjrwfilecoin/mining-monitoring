@@ -139,7 +139,7 @@ func (sp *Parse) doWorkers() {
 }
 
 func (sp *Parse) PingWorkersV1() {
-	var res []interface{}
+	var res []map[string]interface{}
 	for i := 0; i < len(sp.Workers); i++ {
 		worker := sp.Workers[i]
 		execInfo := fmt.Sprintf(`root@%v`, worker.HostName)
@@ -157,10 +157,8 @@ func (sp *Parse) PingWorkersV1() {
 		}
 		res = append(res, utils.StructToMapByJson(worker))
 	}
-	sp.cmdSign <- NewCmdData("", sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
+	sp.cmdSign <- NewCmdData(sp.Miners.MinerId, sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
 }
-
-
 
 func (sp *Parse) getWorkerList(cmd ShellCmd) error {
 
@@ -190,16 +188,18 @@ func (sp *Parse) doHardwareInfoV1() {
 		ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
 		for i := 0; i < len(workerList); i++ {
 			worker := workerList[i]
-			time.Sleep(300 * time.Millisecond)
+			if i != 0 && i%3 == 0 {
+				time.Sleep(300 * time.Millisecond)
+			}
 			sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
 		}
-		time.Sleep(6 * time.Second)
+		time.Sleep(3 * time.Second)
 
 	}
 }
 
 func (sp *Parse) doHardWareInfo() {
-	ticker := time.NewTicker(8 * time.Second)
+	ticker := time.NewTicker(6 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -207,7 +207,7 @@ func (sp *Parse) doHardWareInfo() {
 			sp.Lock()
 			workerList := sp.Workers
 			sp.Unlock()
-			ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			for i := 0; i < len(workerList); i++ {
 				worker := workerList[i]
 				sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
@@ -254,7 +254,7 @@ func (sp *Parse) getMiner() error {
 	minerInfoCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerInfoCmd, []string{"info"})
 	err := sp.execShellCmd(minerInfoCmd, func(input string) {
 		minerInfo := sp.getMinerInfo(input)
-		sp.cmdSign <- NewCmdData(minerInfo.MinerId, minerInfo.MinerId, LotusMinerInfoCmd, LotusState, minerInfo)
+		sp.cmdSign <- NewCmdData(minerInfo.MinerId, minerInfo.MinerId, LotusMinerInfoCmd, LotusState, utils.StructToMapByJson(minerInfo))
 		sp.Miners = Miner{MinerId: minerInfo.MinerId,}
 	})
 	return err
@@ -304,16 +304,16 @@ func (sp *Parse) Init() error {
 	if err != nil {
 		return err
 	}
-
-	err = sp.InitMinerInfo()
-	if err != nil {
-		return err
-	}
 	minerWorkersCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerWorkers, []string{"sealing", "workers"})
 	err = sp.getWorkerList(minerWorkersCmd)
 	if err != nil {
 		return err
 	}
+	err = sp.InitMinerInfo()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -438,7 +438,8 @@ func (sp *Parse) ExecLotusMinerJobs(cmd ShellCmd, data string) CmdData {
 func (sp *Parse) ExecLotusPostInfo(cmd ShellCmd, data string) CmdData {
 	postBalance := postBalanceTestReg.FindAllStringSubmatch(data, 1)
 	postValue := getRegexValue(postBalance)
-	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, PostBalance{PostBalance: postValue})
+	balance := PostBalance{PostBalance: postValue}
+	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, utils.StructToMapByJson(balance))
 }
 
 func (sp *Parse) ExecLotusMpoolInfo(cmd ShellCmd, data string) CmdData {
@@ -512,14 +513,14 @@ func (sp *Parse) ExecGPUCmd(cmd ShellCmd, input string) CmdData {
 
 func (sp *Parse) ExecSensorsCmd(cmd ShellCmd, output string) CmdData {
 	cpuTemp := getCpuTemperV2(output)
-	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, cpuTemp)
+	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, utils.StructToMapByJson(cpuTemp))
 
 }
 
 func (sp *Parse) ExecDfHCmd(cmd ShellCmd, input string) CmdData {
 	diskUsed := diskUsedRateReg.FindAllStringSubmatch(input, 1)
 	diskInfo := Disk{UseDisk: getRegexValue(diskUsed)}
-	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, diskInfo)
+	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, utils.StructToMapByJson(diskInfo))
 
 }
 
@@ -527,14 +528,14 @@ func (sp *Parse) ExecFreeHCmd(cmd ShellCmd, input string) CmdData {
 
 	memoryUsed := memoryUsedReg.FindAllStringSubmatch(input, 1)
 	memory := Memory{UseMemory: getRegexValueById(memoryUsed, 2), TotalMemory: getRegexValueById(memoryUsed, 1)}
-	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, memory)
+	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, utils.StructToMapByJson(memory))
 
 }
 
 func (sp *Parse) ExecUptimeCmd(cmd ShellCmd, input string) CmdData {
 	cpuLoad := cpuLoadReg.FindAllStringSubmatch(input, 1)
 	load := CpuLoad{CpuLoad: getRegexValue(cpuLoad)}
-	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, load)
+	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, utils.StructToMapByJson(load))
 }
 
 func (sp *Parse) ExecSarNetIOCmd(cmd ShellCmd, input string) CmdData {
@@ -547,7 +548,7 @@ func (sp *Parse) ExecIOTopCmd(cmd ShellCmd, input string) CmdData {
 	diskRead := diskReadReg.FindAllStringSubmatch(input, 1)
 	diskWrite := diskWriteReg.FindAllStringSubmatch(input, 1)
 	info := IoInfo{DiskR: getRegexValue(diskRead), DiskW: getRegexValue(diskWrite)}
-	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, info)
+	return NewCmdData(cmd.HostName, sp.Miners.MinerId, cmd.CmdType, cmd.State, utils.StructToMapByJson(info))
 }
 
 func getCpuTemperV2(data string) CpuTemp {
@@ -592,7 +593,7 @@ func getNetIOV3(data string) interface{} {
 
 func (sp *Parse) GetMinerJobsV3(data string) interface{} {
 	canParse := false
-	var jobsMap []interface{}
+	var jobsMap []map[string]interface{}
 	reader := bufio.NewReader(bytes.NewBuffer([]byte(data)))
 	for {
 		line, err := reader.ReadString('\n')
@@ -680,7 +681,6 @@ func getGraphicsCardInfoV3(data string) interface{} {
 	return res
 }
 
-
 func getCpuTemper(data string) string {
 	tdieValue := cpuTemperatureRTdieReg.FindAllStringSubmatch(data, 1)
 	value := getRegexValue(tdieValue)
@@ -712,8 +712,6 @@ func getGraphicsCardInfo(data string) interface{} {
 	return graphCardList
 }
 
-
-
 func getGpuInfo(src string) (string, string) {
 	fields := strings.Fields(src)
 	if len(fields) < 15 {
@@ -729,8 +727,6 @@ func getGpuId(src string) string {
 	}
 	return fields[1]
 }
-
-
 
 func getNetIO(data string) interface{} {
 	allSubStr := netIOAverageReg.FindAllStringSubmatch(data, -1)

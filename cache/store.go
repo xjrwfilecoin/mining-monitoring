@@ -1,8 +1,11 @@
 package cache
 
 import (
-	"mining-monitoring/shellParsing"
+	"fmt"
+	"mining-monitoring/log"
+	"mining-monitoring/shell"
 	"reflect"
+	"strings"
 )
 
 type Value struct {
@@ -42,30 +45,23 @@ type WorkerInfo struct {
 	TaskType  Value `json:"taskType"`
 }
 
-// todo
-func (w WorkerInfo) UpdateNetState(obj interface{}) {
-	if netStateMap, ok := obj.(map[string]interface{}); ok {
-		if netState, ok := netStateMap["netState"]; ok {
-			if reflect.DeepEqual(w.NetState, netState) {
-				w.NetState.Update(true, netState)
-			}
-		}
-	}
-}
-
-// todo
-func (w *WorkerInfo) UpdateTaskType(obj interface{}) {
-	if taskStateInfo, ok := obj.(map[string]interface{}); ok {
-		if taskState, ok := taskStateInfo["taskState"]; ok {
-			if reflect.DeepEqual(w.TaskState, taskState) {
-				w.TaskState.Update(true, taskState)
-			}
-		}
-		if taskType, ok := taskStateInfo["taskType"]; ok {
-			if reflect.DeepEqual(w.TaskType, taskType) {
-				w.TaskType.Update(true, taskType)
-			}
-		}
+func NewWorkerInfo(hostName string) *WorkerInfo {
+	return &WorkerInfo{
+		HostName:     Value{Value: hostName},
+		CurrentQueue: Value{},
+		PendingQueue: Value{},
+		CpuTemper:    Value{},
+		CpuLoad:      Value{},
+		GpuInfo:      Value{},
+		TotalMemory:  Value{},
+		UseMemory:    Value{},
+		UseDisk:      Value{},
+		DiskR:        Value{},
+		DiskW:        Value{},
+		NetIO:        Value{},
+		NetState:     Value{},
+		TaskState:    Value{},
+		TaskType:     Value{},
 	}
 }
 
@@ -90,15 +86,37 @@ func (w *WorkerInfo) ChangeState(state bool) {
 }
 
 // todo
+func (w *WorkerInfo) UpdateTaskType(obj interface{}) {
+	log.Debug("workers state: ", obj)
+	if taskStateInfo, ok := obj.(map[string]interface{}); ok {
+		if taskState, ok := taskStateInfo["taskState"]; ok {
+			if !DeepEqual(w.TaskState.Value, taskState) {
+				w.TaskState.Update(true, taskState)
+			}
+		}
+		if taskType, ok := taskStateInfo["taskType"]; ok {
+			if !DeepEqual(w.TaskType.Value, taskType) {
+				w.TaskType.Update(true, taskType)
+			}
+		}
+		if netState, ok := taskStateInfo["netState"]; ok {
+			if !DeepEqual(w.NetState.Value, netState) {
+				w.NetState.Update(true, netState)
+			}
+		}
+	}
+}
+
+// todo
 func (w *WorkerInfo) updateDiskIO(obj interface{}) {
 	if resMap, ok := obj.(map[string]interface{}); ok {
 		if diskR, ok := resMap["diskR"]; ok {
-			if reflect.DeepEqual(w.DiskR, diskR) {
+			if !DeepEqual(w.DiskR.Value, diskR) {
 				w.DiskR.Update(true, diskR)
 			}
 		}
 		if diskW, ok := resMap["diskW"]; ok {
-			if reflect.DeepEqual(w.DiskR, diskW) {
+			if !DeepEqual(w.DiskW.Value, diskW) {
 				w.DiskW.Update(true, diskW)
 			}
 		}
@@ -110,12 +128,12 @@ func (w *WorkerInfo) updateDiskIO(obj interface{}) {
 func (w *WorkerInfo) updateMemory(obj interface{}) {
 	if resMap, ok := obj.(map[string]interface{}); ok {
 		if totalMemory, ok := resMap["totalMemory"]; ok {
-			if reflect.DeepEqual(w.TotalMemory, totalMemory) {
+			if !DeepEqual(w.TotalMemory.Value, totalMemory) {
 				w.TotalMemory.Update(true, totalMemory)
 			}
 		}
 		if userMemory, ok := resMap["useMemory"]; ok {
-			if reflect.DeepEqual(w.UseMemory, userMemory) {
+			if !DeepEqual(w.UseMemory.Value, userMemory) {
 				w.UseMemory.Update(true, userMemory)
 			}
 		}
@@ -127,54 +145,80 @@ func (w *WorkerInfo) updateMemory(obj interface{}) {
 func (w *WorkerInfo) updateJobQueue(obj interface{}) {
 	if resMap, ok := obj.(map[string]interface{}); ok {
 		if currentQueue, ok := resMap["currentQueue"]; ok {
-			if reflect.DeepEqual(w.CurrentQueue, currentQueue) {
+			if !DeepEqual(w.CurrentQueue.Value, currentQueue) {
 				w.CurrentQueue.Update(true, currentQueue)
 			}
 		}
 		if pendingQueue, ok := resMap["pendingQueue"]; ok {
-			if reflect.DeepEqual(w.PendingQueue, pendingQueue) {
+			if !DeepEqual(w.PendingQueue.Value, pendingQueue) {
 				w.PendingQueue.Update(true, pendingQueue)
 			}
 		}
 
 	}
 }
+func (w *WorkerInfo) updateCpuLoad(obj interface{}) {
+	if resMap, ok := obj.(map[string]interface{}); ok {
+		if cpuLoad, ok := resMap["cpuLoad"]; ok {
+			if !DeepEqual(w.CpuLoad.Value, cpuLoad) {
+				w.CpuLoad.Update(true, cpuLoad)
+			}
+		}
+	}
+}
 
-func (w *WorkerInfo) Update(obj shellParsing.CmdData) {
+func (w *WorkerInfo) updateCpuTemper(obj interface{}) {
+	if resMap, ok := obj.(map[string]interface{}); ok {
+		if cpuTemper, ok := resMap["cpuTemper"]; ok {
+			if !DeepEqual(w.CpuTemper.Value, cpuTemper) {
+				w.CpuTemper.Update(true, cpuTemper)
+			}
+		}
+	}
+}
+
+func (w *WorkerInfo) updateUseDisk(obj interface{}) {
+	if resMap, ok := obj.(map[string]interface{}); ok {
+		if useDisk, ok := resMap["useDisk"]; ok {
+			if !DeepEqual(w.UseDisk.Value, useDisk) {
+				w.UseDisk.Update(true, useDisk)
+			}
+		}
+	}
+}
+
+func (w *WorkerInfo) Update(obj shell.CmdData) {
 	switch obj.CmdType {
-	case shellParsing.IOCmd:
+	case shell.IOCmd:
 		w.updateDiskIO(obj.Data)
 		break
 
-	case shellParsing.SarCmd:
-		isDiff := IsDiff(w.NetIO, obj.Data)
+	case shell.SarCmd:
+		isDiff := DeepEqual(w.NetIO, obj.Data)
 		w.NetIO.Update(isDiff, obj.Data)
 		break
 
-	case shellParsing.DfHCMd:
-		isDiff := IsDiff(w.UseDisk, obj.Data)
-		w.UseDisk.Update(isDiff, obj.Data)
+	case shell.DfHCMd:
+		w.updateUseDisk(obj.Data)
 		break
 
-	case shellParsing.FreeHCmd:
+	case shell.FreeHCmd:
 		w.updateMemory(obj.Data)
 		break
 
-	case shellParsing.SensorsCmd:
-		isDiff := IsDiff(w.CpuTemper, obj.Data)
-		w.CpuTemper.Update(isDiff, isDiff)
+	case shell.SensorsCmd:
+		w.updateCpuTemper(obj.Data)
 		break
 
-	case shellParsing.GpuCmd:
-		isDiff := IsDiff(w.GpuInfo.Value, obj.Data)
+	case shell.GpuCmd:
+		isDiff := DeepEqual(w.GpuInfo.Value, obj.Data)
 		w.GpuInfo.Update(isDiff, obj.Data)
 		break
 
-	case shellParsing.UpTimeCmd:
-		isDiff := IsDiff(w.CpuLoad, obj.Data)
-		w.CpuLoad.Update(isDiff, obj.Data)
+	case shell.UpTimeCmd:
+		w.updateCpuLoad(obj.Data)
 		break
-	case shellParsing.LotusMinerJobs:
+	case shell.LotusMinerJobs:
 		w.updateJobQueue(obj.Data)
 		break
 	default:
@@ -189,8 +233,13 @@ func (w WorkerInfo) GetDiff(all bool) map[string]interface{} {
 	for i := 0; i < vw.NumField(); i++ {
 		f := vw.Field(i)
 		value := f.FieldByName("Value").Interface()
-		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag || all {
-			param[tw.Field(i).Name] = value
+		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag && value != nil || all {
+			keyName := tw.Field(i).Name
+			if len(keyName) < 2 {
+				continue
+			}
+			newKey := fmt.Sprintf("%v%v", strings.ToLower(keyName[0:1]), keyName[1:])
+			param[newKey] = value
 		}
 
 	}
@@ -223,19 +272,55 @@ type MinerInfo struct {
 
 }
 
-func (w *MinerInfo) Update(obj shellParsing.CmdData) {
+func NewMinerInfo(minerId string) *MinerInfo {
+	return &MinerInfo{
+		MinerId:       Value{Value: minerId},
+		MinerBalance:  Value{},
+		WorkerBalance: Value{},
+		PostBalance:   Value{},
+
+		PledgeBalance:    Value{},
+		EffectivePower:   Value{},
+		TotalSectors:     Value{},
+		EffectiveSectors: Value{},
+		ErrorSectors:     Value{},
+		RecoverySectors:  Value{},
+		DeletedSectors:   Value{},
+		FailSectors:      Value{},
+		ExpectBlock:      Value{},
+		MinerAvailable:   Value{},
+		PreCommitWait:    Value{},
+		CommitWait:       Value{},
+		PreCommit1:       Value{},
+		PreCommit2:       Value{},
+		WaitSeed:         Value{},
+		Committing:       Value{},
+		FinalizeSector:   Value{},
+	}
+}
+
+func (w *MinerInfo) Update(obj shell.CmdData) {
 	switch obj.CmdType {
-	case shellParsing.LotusControlList:
-		isDiff := IsDiff(w.PostBalance, obj.Data)
-		w.PostBalance.Update(isDiff, obj.Data)
+	case shell.LotusControlList:
+		w.UpdatePostBalance(obj.Data)
 		break
 
-	case shellParsing.LotusMinerInfoCmd:
+	case shell.LotusMinerInfoCmd:
 		w.UpdateMinerInfo(obj.Data)
 		break
 
 	default:
 
+	}
+}
+
+func (w *MinerInfo) UpdatePostBalance(obj interface{}) {
+	if resMap, ok := obj.(map[string]interface{}); ok {
+		if postBalance, ok := resMap["postBalance"]; ok {
+			if !DeepEqual(w.PostBalance.Value, postBalance) {
+				w.PostBalance.Update(true, postBalance)
+			}
+		}
 	}
 }
 
@@ -246,8 +331,13 @@ func (w MinerInfo) GetDiff(all bool) map[string]interface{} {
 	for i := 0; i < vw.NumField(); i++ {
 		f := vw.Field(i)
 		value := f.FieldByName("Value").Interface()
-		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag || all {
-			param[tw.Field(i).Name] = value
+		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag && value != nil || all {
+			keyName := tw.Field(i).Name
+			if len(keyName) < 2 {
+				continue
+			}
+			newKey := fmt.Sprintf("%v%v", strings.ToLower(keyName[0:1]), keyName[1:])
+			param[newKey] = value
 		}
 	}
 	return param
@@ -282,113 +372,110 @@ func (w *MinerInfo) ChangeState(state bool) {
 // todo
 func (w *MinerInfo) UpdateMinerInfo(obj interface{}) {
 	if resMap, ok := obj.(map[string]interface{}); ok {
+
 		if minerId, ok := resMap["minerId"]; ok {
-			if reflect.DeepEqual(w.MinerId, minerId) {
+			if !DeepEqual(w.MinerId.Value, minerId) {
 				w.MinerId.Update(true, minerId)
 			}
 		}
 		if minerBalance, ok := resMap["minerBalance"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, minerBalance) {
+			log.Debug("minerInfo: minerBalance ", w.MinerBalance, minerBalance)
+			if !DeepEqual(w.MinerBalance.Value, minerBalance) {
 				w.MinerBalance.Update(true, minerBalance)
 			}
 		}
 		if workerBalance, ok := resMap["workerBalance"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, workerBalance) {
+			if !DeepEqual(w.WorkerBalance.Value, workerBalance) {
 				w.WorkerBalance.Update(true, workerBalance)
 			}
 		}
-		if postBalance, ok := resMap["postBalance"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, postBalance) {
-				w.PostBalance.Update(true, postBalance)
-			}
-		}
 		if pledgeBalance, ok := resMap["pledgeBalance"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, pledgeBalance) {
+			if !DeepEqual(w.PledgeBalance.Value, pledgeBalance) {
 				w.PledgeBalance.Update(true, pledgeBalance)
 			}
 		}
 		if effectivePower, ok := resMap["effectivePower"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, effectivePower) {
+			if !DeepEqual(w.EffectivePower.Value, effectivePower) {
 				w.EffectivePower.Update(true, effectivePower)
 			}
 		}
 		if totalSectors, ok := resMap["totalSectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, totalSectors) {
+			if !DeepEqual(w.TotalSectors.Value, totalSectors) {
 				w.TotalSectors.Update(true, totalSectors)
 			}
 		}
 		if effectiveSectors, ok := resMap["effectiveSectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, effectiveSectors) {
+			if !DeepEqual(w.EffectiveSectors.Value, effectiveSectors) {
 				w.EffectiveSectors.Update(true, effectiveSectors)
 			}
 		}
 		if errorSectors, ok := resMap["errorSectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, errorSectors) {
+			if !DeepEqual(w.ErrorSectors.Value, errorSectors) {
 				w.ErrorSectors.Update(true, errorSectors)
 			}
 		}
 		if recoverySectors, ok := resMap["recoverySectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, recoverySectors) {
+			if !DeepEqual(w.RecoverySectors.Value, recoverySectors) {
 				w.RecoverySectors.Update(true, recoverySectors)
 			}
 		}
 		if deletedSectors, ok := resMap["deletedSectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, deletedSectors) {
+			if !DeepEqual(w.DeletedSectors.Value, deletedSectors) {
 				w.DeletedSectors.Update(true, deletedSectors)
 			}
 		}
 		if failSectors, ok := resMap["failSectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, failSectors) {
+			if !DeepEqual(w.FailSectors.Value, failSectors) {
 				w.FailSectors.Update(true, failSectors)
 			}
 		}
 		if deletedSectors, ok := resMap["deletedSectors"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, deletedSectors) {
+			if !DeepEqual(w.DeletedSectors.Value, deletedSectors) {
 				w.DeletedSectors.Update(true, deletedSectors)
 			}
 		}
 		if expectBlock, ok := resMap["expectBlock"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, expectBlock) {
+			if !DeepEqual(w.ExpectBlock.Value, expectBlock) {
 				w.ExpectBlock.Update(true, expectBlock)
 			}
 		}
 		if minerAvailable, ok := resMap["minerAvailable"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, minerAvailable) {
+			if !DeepEqual(w.MinerAvailable.Value, minerAvailable) {
 				w.MinerAvailable.Update(true, minerAvailable)
 			}
 		}
 		if preCommitWait, ok := resMap["preCommitWait"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, preCommitWait) {
+			if !DeepEqual(w.PreCommitWait.Value, preCommitWait) {
 				w.PreCommitWait.Update(true, preCommitWait)
 			}
 		}
 		if commitWait, ok := resMap["commitWait"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, commitWait) {
+			if !DeepEqual(w.CommitWait.Value, commitWait) {
 				w.CommitWait.Update(true, commitWait)
 			}
 		}
 		if preCommit1, ok := resMap["preCommit1"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, preCommit1) {
+			if !DeepEqual(w.PreCommit1.Value, preCommit1) {
 				w.PreCommit1.Update(true, preCommit1)
 			}
 		}
 		if preCommit2, ok := resMap["preCommit2"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, preCommit2) {
+			if !DeepEqual(w.PreCommit2.Value, preCommit2) {
 				w.PreCommit2.Update(true, preCommit2)
 			}
 		}
 		if waitSeed, ok := resMap["waitSeed"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, waitSeed) {
+			if !DeepEqual(w.WaitSeed.Value, waitSeed) {
 				w.WaitSeed.Update(true, waitSeed)
 			}
 		}
 		if committing, ok := resMap["committing"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, committing) {
+			if !DeepEqual(w.Committing.Value, committing) {
 				w.Committing.Update(true, committing)
 			}
 		}
 		if finalizeSector, ok := resMap["finalizeSector"]; ok {
-			if reflect.DeepEqual(w.MinerBalance, finalizeSector) {
+			if !DeepEqual(w.FinalizeSector.Value, finalizeSector) {
 				w.FinalizeSector.Update(true, finalizeSector)
 			}
 		}

@@ -6,12 +6,12 @@ import (
 	"io/ioutil"
 	"mining-monitoring/config"
 	"mining-monitoring/log"
+	cache "mining-monitoring/cache"
 	"mining-monitoring/model"
 	httpsvr "mining-monitoring/net/http"
 	"mining-monitoring/net/socket"
 	"mining-monitoring/service"
-	"mining-monitoring/shellParsing"
-	"mining-monitoring/store"
+	"mining-monitoring/shell"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-var ShellManager *shellParsing.Manager
+var ShellManager *shell.Manager
 
 func Run(cfgPath string) error {
 
@@ -37,16 +37,16 @@ func Run(cfgPath string) error {
 	if err != nil {
 		return err
 	}
-	ShellManager, err = shellParsing.NewManager()
+	ShellManager, err = shell.NewManager()
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
 	defer ShellManager.Close()
-	sign := make(chan shellParsing.CmdData, 100)
-	manager := store.NewManager()
+	sign := make(chan shell.CmdData, 100)
+	manager := cache.NewManager()
 	defer manager.Close()
 	for i := 0; i < 100; i++ {
-		go manager.Recv(sign)
+		go manager.Rec(sign)
 	}
 	go manager.Send()
 	go ShellManager.Run(sign)
