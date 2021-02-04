@@ -193,7 +193,7 @@ func (sp *Parse) doHardwareInfoV1() {
 			}
 			sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(4 * time.Second)
 
 	}
 }
@@ -562,7 +562,7 @@ func getCpuTemperV2(data string) CpuTemp {
 }
 
 func getNetIOV3(data string) interface{} {
-	var res []interface{}
+	var res []map[string]interface{}
 	allSubStr := netIOAverageReg.FindAllStringSubmatch(data, -1)
 	for i := 0; i < len(allSubStr); i++ {
 		if len(allSubStr[i]) == 0 {
@@ -657,7 +657,7 @@ func (sp *Parse) GetMinerWorkersV2(input string) []*WorkerInfo {
 }
 
 func getGraphicsCardInfoV3(data string) interface{} {
-	var res []interface{}
+	var res []map[string]interface{}
 	idAllStrs := gpuIdReg.FindAllStringSubmatch(data, -1)
 	gpInfoAllStrs := gpuInfoReg.FindAllStringSubmatch(data, -1)
 	if len(idAllStrs) < 1 || len(gpInfoAllStrs) < 1 {

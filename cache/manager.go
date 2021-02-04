@@ -105,10 +105,10 @@ func (m *Manager) diffData() interface{} {
 	result := make(map[string]interface{})
 	var workerList []map[string]interface{}
 	minerInfo, ok := m.MinerInfoTable[m.MinerId]
-	if ok {
-		result = minerInfo.GetDiff(false)
+	if !ok {
+		return nil
 	}
-
+	result = minerInfo.GetDiff(false)
 	for _, workerInfo := range m.WorkerInfoTable {
 		workerDiff := workerInfo.GetDiff(false)
 		if len(workerDiff) > 1 {
@@ -169,6 +169,7 @@ func (m *Manager) Rec(obj <-chan shell.CmdData) {
 			if len(m.MinerId) == 0 {
 				m.MinerId = MinerId(data.MinerId)
 			}
+			log.Debug("cache rec: ", data)
 			m.Update(data)
 		case <-m.closing:
 			return

@@ -37,7 +37,7 @@ type WorkerInfo struct {
 	UseDisk      Value `json:"useDisk"`
 	DiskR        Value `json:"diskR"`
 	DiskW        Value `json:"diskW"`
-	NetIO        Value `json:"netIo"`
+	NetIO        Value `json:"netIO"`
 
 	NetState Value `json:"netState"` // ping心跳
 
@@ -194,7 +194,7 @@ func (w *WorkerInfo) Update(obj shell.CmdData) {
 		break
 
 	case shell.SarCmd:
-		isDiff := DeepEqual(w.NetIO, obj.Data)
+		isDiff := !DeepEqual(w.NetIO.Value, obj.Data)
 		w.NetIO.Update(isDiff, obj.Data)
 		break
 
@@ -211,7 +211,7 @@ func (w *WorkerInfo) Update(obj shell.CmdData) {
 		break
 
 	case shell.GpuCmd:
-		isDiff := DeepEqual(w.GpuInfo.Value, obj.Data)
+		isDiff := !DeepEqual(w.GpuInfo.Value, obj.Data)
 		w.GpuInfo.Update(isDiff, obj.Data)
 		break
 

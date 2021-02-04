@@ -85,7 +85,7 @@ func MyLogicLogger(logPath string) (*logrus.Logger, error) {
 	}
 	logger := logrus.New()
 	logger.Out = io.MultiWriter(writers...)
-	logger.SetLevel(logrus.DebugLevel)
+	logger.SetLevel(logrus.WarnLevel)
 	logWriter, err := rotatelogs.New(
 		fileName+".%Y%m%d.log",
 		//rotatelogs.WithLinkName(fileName),
