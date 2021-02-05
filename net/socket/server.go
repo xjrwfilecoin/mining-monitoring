@@ -85,7 +85,7 @@ func (ss *Server) AddConnCount() {
 
 func (ss *Server) CanConn() (int64, bool) {
 	connCount := atomic.LoadInt64(&ss.connCount)
-	if connCount < 5000 { // todo
+	if connCount < 3000 { // todo
 		return connCount, true
 	}
 	return connCount, false
@@ -109,6 +109,7 @@ func (ss *Server) Run() error {
 			log.Warn("server conn count is max: please wait  ", connCount)
 			return nil
 		}
+		ss.AddConnCount()
 		log.Warn("socketIO client connect ", "connCount: ", connCount, s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 		s.Emit("message", "connected ")
 		return nil
@@ -117,7 +118,6 @@ func (ss *Server) Run() error {
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
 		log.Error("socketIo error ", e.Error())
 		if s != nil {
-			ss.DelConnCount()
 			log.Error("socketIo error： info: ", s.ID(), s.LocalAddr(), s.RemoteAddr())
 			s.LeaveAll()
 			err := s.Close()
@@ -125,6 +125,7 @@ func (ss *Server) Run() error {
 				log.Error(err.Error())
 
 			}
+			ss.DelConnCount()
 		}
 
 	})
@@ -132,7 +133,6 @@ func (ss *Server) Run() error {
 	ss.server.OnDisconnect(ss.namespace, func(s socketio.Conn, reason string) {
 		log.Error("socketIo client disConnect ", reason)
 		if s != nil {
-			ss.DelConnCount()
 			log.Error("socketIO client disConnect: ", s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 			s.LeaveAll()
 			err := s.Close()
@@ -140,6 +140,7 @@ func (ss *Server) Run() error {
 				log.Error(err.Error())
 
 			}
+			ss.DelConnCount()
 		}
 	})
 	return ss.server.Serve()

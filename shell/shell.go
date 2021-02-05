@@ -108,7 +108,8 @@ func (sp *Parse) doMinerInfo() {
 				if !sp.CanAddTask() {
 					continue
 				}
-				sp.processTask(cmd, sp.cmdSign, fn)
+				ctx, _ := context.WithTimeout(context.Background(), 40*time.Second)
+				sp.processTask(ctx, cmd, sp.cmdSign, fn)
 			}
 		case <-sp.closing:
 			return
@@ -144,7 +145,8 @@ func (sp *Parse) PingWorkersV1() {
 		worker := sp.Workers[i]
 		execInfo := fmt.Sprintf(`root@%v`, worker.HostName)
 		cmd := NewHardwareShellCmd(worker.HostName, "sshpass", FreeHCmd, []string{"-p", "", "ssh", "-p", SSHPORT, execInfo})
-		err := sp.execShellCmd(cmd, func(input string) {
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+		err := sp.execShellCmd(ctx, cmd, func(input string) {
 
 		})
 		if err != nil {
@@ -161,8 +163,8 @@ func (sp *Parse) PingWorkersV1() {
 }
 
 func (sp *Parse) getWorkerList(cmd ShellCmd) error {
-
-	err := sp.execShellCmd(cmd, func(input string) {
+	ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+	err := sp.execShellCmd(ctx, cmd, func(input string) {
 		workers := sp.GetMinerWorkersV2(input)
 		sp.Lock()
 		sp.Workers = workers
@@ -185,13 +187,12 @@ func (sp *Parse) doHardwareInfoV1() {
 		sp.Lock()
 		workerList := sp.Workers
 		sp.Unlock()
-		ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
 		for i := 0; i < len(workerList); i++ {
 			worker := workerList[i]
 			if i != 0 && i%3 == 0 {
 				time.Sleep(300 * time.Millisecond)
 			}
-			sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
+			sp.runWorkerCmdList(worker, sp.cmdSign)
 		}
 		time.Sleep(4 * time.Second)
 
@@ -207,10 +208,9 @@ func (sp *Parse) doHardWareInfo() {
 			sp.Lock()
 			workerList := sp.Workers
 			sp.Unlock()
-			ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 			for i := 0; i < len(workerList); i++ {
 				worker := workerList[i]
-				sp.runWorkerCmdList(ctx, worker, sp.cmdSign)
+				sp.runWorkerCmdList(worker, sp.cmdSign)
 			}
 		case <-sp.closing:
 			return
@@ -219,7 +219,7 @@ func (sp *Parse) doHardWareInfo() {
 	}
 }
 
-func (sp *Parse) runWorkerCmdList(ctx context.Context, worker *WorkerInfo, sing chan CmdData) {
+func (sp *Parse) runWorkerCmdList(worker *WorkerInfo, sing chan CmdData) {
 	if worker == nil {
 		return
 	}
@@ -230,7 +230,8 @@ func (sp *Parse) runWorkerCmdList(ctx context.Context, worker *WorkerInfo, sing 
 			if !sp.CanAddTask() {
 				continue
 			}
-			go sp.processTask(cmd, sing, fn)
+			ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+			go sp.processTask(ctx,cmd, sing, fn)
 		}
 
 	}
@@ -252,7 +253,8 @@ func (sp *Parse) needGPU(worker WorkerInfo01) bool {
 
 func (sp *Parse) getMiner() error {
 	minerInfoCmd := NewLotusShellCmd("", "lotus-miner", LotusMinerInfoCmd, []string{"info"})
-	err := sp.execShellCmd(minerInfoCmd, func(input string) {
+	ctx, _ := context.WithTimeout(context.Background(), 40*time.Second)
+	err := sp.execShellCmd(ctx, minerInfoCmd, func(input string) {
 		minerInfo := sp.getMinerInfo(input)
 		sp.cmdSign <- NewCmdData(minerInfo.MinerId, minerInfo.MinerId, LotusMinerInfoCmd, LotusState, utils.StructToMapByJson(minerInfo))
 		sp.Miners = Miner{MinerId: minerInfo.MinerId,}
@@ -288,7 +290,8 @@ func (sp *Parse) getMinerHardwareInfo() {
 					if !sp.CanAddTask() {
 						continue
 					}
-					go sp.processTask(cmd, sp.cmdSign, fn)
+					ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+					go sp.processTask(ctx,cmd, sp.cmdSign, fn)
 				}
 			}
 		case <-sp.closing:
@@ -325,7 +328,8 @@ func (sp *Parse) InitMinerInfo() error {
 	for i := 0; i < len(cmdList); i++ {
 		cmd := cmdList[i]
 		if fn, ok := sp.CmdParseMap[cmd.CmdType]; ok {
-			err := sp.processTask(cmd, sp.cmdSign, fn)
+			ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+			err := sp.processTask(ctx,cmd, sp.cmdSign, fn)
 			if err != nil {
 				return fmt.Errorf("get miner info : %v ", err)
 			}
@@ -347,7 +351,8 @@ func (sp *Parse) miningInfo() {
 					if !sp.CanAddTask() {
 						continue
 					}
-					go sp.processTask(cmd, sp.cmdSign, fn)
+					ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
+					go sp.processTask(ctx,cmd, sp.cmdSign, fn)
 				}
 			}
 
@@ -373,8 +378,8 @@ func (sp *Parse) Receiver(recv chan CmdData) {
 	}
 }
 
-func (sp *Parse) execShellCmd(cmd ShellCmd, fn func(input string)) error {
-	data, err := sp.ExecCmd(cmd.Name, cmd.Params...)
+func (sp *Parse) execShellCmd(ctx context.Context, cmd ShellCmd, fn func(input string)) error {
+	data, err := sp.ExecCmd(ctx, cmd.Name, cmd.Params...)
 	if err != nil {
 		return err
 	}
@@ -386,7 +391,7 @@ func (sp *Parse) WrapProcessTask(ctx context.Context, shellCmd <-chan ShellCmd, 
 	for {
 		select {
 		case cmd := <-shellCmd:
-			err := sp.processTask(cmd, sp.cmdSign, fn)
+			err := sp.processTask(ctx, cmd, sp.cmdSign, fn)
 			if err != nil {
 				log.Error("wrapProcessTask: ", err.Error())
 			}
@@ -409,12 +414,11 @@ func (sp *Parse) DelTaskCount() {
 	atomic.AddInt64(&sp.cmdCount, -1)
 }
 
-func (sp *Parse) processTask(cmd ShellCmd, sign chan CmdData, fn func(cmd ShellCmd, input string) CmdData) error {
-
+func (sp *Parse) processTask(ctx context.Context, cmd ShellCmd, sign chan CmdData, fn func(cmd ShellCmd, input string) CmdData) error {
 	sp.AddTaskCount()
 	defer sp.DelTaskCount()
 
-	output, err := sp.ExecCmd(cmd.Name, cmd.Params...)
+	output, err := sp.ExecCmd(ctx, cmd.Name, cmd.Params...)
 	if err != nil {
 		log.Error("process task error ", cmd.CmdType, cmd.Name, cmd.HostName, err)
 		return err
@@ -753,21 +757,7 @@ func getNetIO(data string) interface{} {
 	return NetIOes
 }
 
-func (sp *Parse) ExecCmdWithCtx(ctx context.Context, cmdName string, args ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
-	defer cancel()
-	log.Debug("exec cmd: ", cmdName, args)
-	cmd := exec.CommandContext(ctx, cmdName, args...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
-
-func (sp *Parse) ExecCmd(cmdName string, args ...string) (string, error) {
-	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
-	defer cancel()
+func (sp *Parse) ExecCmd(ctx context.Context, cmdName string, args ...string) (string, error) {
 	log.Debug("exec cmd: ", cmdName, args)
 	cmd := exec.CommandContext(ctx, cmdName, args...)
 	output, err := cmd.CombinedOutput()

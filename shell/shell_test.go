@@ -19,7 +19,7 @@ control-0  t0116299  t3qsi32gm...  post   5.00000000001 FIL
 var postStr001 = `
 owner      t07568    t3xd3xmwl...  [33mother[0m  [33m14.695825071182304616 FIL[0m  
 worker     t07568    t3xd3xmwl...  [33mother[0m  [33m14.695825071182304616 FIL[0m  
-control-0  t0116526  t3qd7nng7...  [32mpost[0m   [31m1.11 FIL[0m    
+control-0  t0116526  t3qd7nng7...  [32mpost[0m   [31m661.11 FIL[0m    
 `
 
 

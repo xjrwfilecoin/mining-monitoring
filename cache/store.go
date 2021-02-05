@@ -45,6 +45,7 @@ type WorkerInfo struct {
 	TaskType  Value `json:"taskType"`
 }
 
+
 func NewWorkerInfo(hostName string) *WorkerInfo {
 	return &WorkerInfo{
 		HostName:     Value{Value: hostName},

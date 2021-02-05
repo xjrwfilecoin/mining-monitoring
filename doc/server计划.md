@@ -14,15 +14,18 @@
 
 #### 实现方式
 
-客户端
+数据结构
 * 定义两张表结构 minerInfo 和 workerInfo ;minerInfo存储miner总体概览信息(余额，扇区总数等信息), workerInfo 存储每台机器任务信息，硬件指标相关信息
 * minerInfo表的key 为minerId, workerInfo key值为 {hostName,minerId} 两个字段标识; 每个字段都有一个flag标识 数据是否更新；
+
+客户端
+
 * 程序运行检查环境，检查lotus-miner启动并可用 ,初始化数据获取miner和硬件的整体信息; 初始化 websocket 连接服务器; 
 * 通过定时任务，下发命令抓取数据信息；不存在直接更新到表中，存在比对差异把差异部分更新到表中,更改flag为true 
 * 定时任务把更新差异后的数据取出，推送到服务端，把 flag标识置为 false 
 
 服务端
-* 定义挖矿表信息 miningInfo 存储一个miner集群整体状态信息，集群worker任务状态等信息 
+
 * 初始化websocket服务，每接入一个新的连接对象，下发上报整体信息命令，让客户端把整体信息上报上来
 * 接收数据并存入到数据表中，变化的部分更改 flag 为true
 * 定时任务把变化的数据根据订阅的模式推送到前端
@@ -35,25 +38,6 @@
 
 
 #### 数据结构
-
-miningInfo 结构
-
-                "sealPreCommit1Failed":"",
-                "adjustedPower":"",
-                "deletedSectors":"",
-                ...
-                "workerInfo":[
-                  {
-                        "cpuLoad":"4.67",
-                        "cpuTemper":"",
-                         taskState:int              // 设备任务状态 
-                         netState:int               // miner与设备网络状态
-                         taskType:[]string          // 设备任务类型 
-                         ...
-                   },
-                   ...    
-                ]
-            
 
 
 
