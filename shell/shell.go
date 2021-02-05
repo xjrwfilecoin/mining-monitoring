@@ -621,6 +621,7 @@ func (sp *Parse) GetMinerJobsV3(data string) interface{} {
 			jobsMap = append(jobsMap, utils.StructToMapByJson(task))
 		}
 	}
+	log.Error("checkJobs: shell ", jobsMap)
 	return jobsMap
 }
 

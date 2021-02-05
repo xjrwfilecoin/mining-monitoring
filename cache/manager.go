@@ -60,10 +60,12 @@ func (m *Manager) Update(obj shell.CmdData) {
 }
 
 func (m *Manager) updateWorkerTask(minerId string, obj interface{}) {
+	log.Error("checkJobs: rec ", obj)
 	if jobsMap, ok := obj.([]map[string]interface{}); ok {
 		mapByHost := mapByHost(jobsMap)
 		mapByState := mapByState(mapByHost)
 		mapByType := mapByType(mapByState)
+		log.Error("checkJobs: mapByType: ", mapByType)
 		for hostName, taskQueue := range mapByType {
 			workerId := WorkerId{MinerId: MinerId(minerId), HostName: hostName}
 			workerInfo, ok := m.WorkerInfoTable[workerId]
@@ -71,6 +73,7 @@ func (m *Manager) updateWorkerTask(minerId string, obj interface{}) {
 				workerInfo = NewWorkerInfo(hostName)
 				m.WorkerInfoTable[workerId] = workerInfo
 			}
+			log.Error("checkJobs: taskQueue: ", workerId, taskQueue)
 			workerInfo.updateJobQueue(taskQueue)
 		}
 	}

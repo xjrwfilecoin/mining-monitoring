@@ -127,35 +127,25 @@ func TestShellMinerInfo(t *testing.T) {
 }
 
 var jobsSrc = `
-build info: 0dfa8a218452bca3e8ee97abd2a3bd06cbeb2c70
-localIP:  172.70.16.201
-ID        Sector  Worker    Hostname       Task  State        Time
-c71e05fc  8598    74d84e37  ya_amd_node36  PC1   running      2h12m29.5s
-b17ec3eb  8599    6a38fdf0  ya_amd_node18  PC1   running      2h11m56.6s
-46118a65  8600    72f03062  ya_amd_node22  PC1   running      2h9m46s
-c235c6fc  8553    fe77e2ff  ya_gpu_node06  PC2   running      1h26m50.2s
-6476e4c6  8531    03892a81  ya_gpu_node09  C2    running      1h16m2.8s
-0c964e5e  8601    7c221333  ya_amd_node16  PC1   running      1h13m37.4s
-018c2e11  8602    d0ee84bc  ya_amd_node25  PC1   running      1h6m59.5s
-07ba1a71  8603    a601c886  ya_amd_node33  PC1   running      1h6m54.9s
-f4cd98b8  8604    2f9c7eb8  ya_amd_node14  PC1   running      1h6m5.6s
-c7f267a1  8339    ba329dcb  ya_gpu_node10  C2    running      1h1m12.8s
-bd48e86b  8346    ba329dcb  ya_gpu_node10  C2    running      1h1m12s
-f4f924ee  8556    3e3bd7ad  ya_amd_node34  PC1   running      57m28s
-d5859116  8366    2668f692  ya_amd_node01  PC1   running      56m38.1s
-2e202937  8372    0277fc73  ya_amd_node27  PC1   running      56m33.7s
-b04a2ae0  8581    c9f19254  ya_amd_node31  PC1   running      52m46s
-10023a79  8571    2668f692  ya_amd_node01  PC1   running      52m43.7s
-d836c5ca  8580    72f03062  ya_amd_node22  PC1   running      52m41.5s
-f5a8cd29  8572    efc31ace  ya_amd_node08  PC1   running      52m41.2s
-2e9c8dd3  8605    0877ce65  ya_amd_node05  PC1   running      51m49.5s
-2eee566a  8575    3e8fc241  ya_amd_node21  PC1   running      51m48.2s
-a9bed652  8515    88bfb751  ya_gpu_node03  C2    running      40m28s
-21851c28  8526    88bfb751  ya_gpu_node03  C2    running      40m27.3s
-34a9edd1  8590    27cfe0c3  ya_amd_node02  PC1   running      39m37.9s
-b6f7ef87  8362    0877ce65  ya_amd_node05  PC1   running      24m28.9s
-88571edc  8606    30219202  ya_amd_node10  PC1   running      24m8.8s
-13221e93  8473    b7f2929c  ya_amd_node06  PC1   running      23m51.2s
+ID        Sector  Worker    Hostname    Task  State        Time
+70249a36  1616    bd66ebb7  ya-node195  PC1   running      1h48m47.2s
+3572fa63  1624    a3e0cfff  ya-node196  PC1   running      1h48m46s
+3b5f7283  1620    fd92ce4e  ya-node11   PC1   running      1h48m39.5s
+fbb7d878  1621    67065548  ya-node48   PC1   running      1h48m21.6s
+24d4dc38  1618    a289969d  ya-node50   PC1   running      1h48m21.2s
+c0799fc5  1419    1e24444b  ya-node51   PC1   running      1h48m19.3s
+496ed1b9  1582    bd66ebb7  ya-node195  PC2   running      30m29.7s
+5f44df43  1567    a3e0cfff  ya-node196  PC2   running      27m49.5s
+bcd05171  1363    cb1e87a3  ya-node10   PC2   running      25m12.9s
+9bbabef2  1568    a289969d  ya-node50   PC2   running      23m46.8s
+908585e8  1551    17f432cc  ya-node12   PC2   running      22m27.1s
+220f16ec  1387    079e68ef  ya-node190  PC2   running      21m59.3s
+db73af69  1569    67065548  ya-node48   PC2   running      21m39.9s
+0554438e  1572    fd92ce4e  ya-node11   PC2   running      20m43.1s
+bdf26c25  1580    3927dc3a  ya-node194  PC2   running      19m56.9s
+daef115e  997     1e24444b  ya-node51   PC2   running      19m46.8s
+00000000  757     079e68ef  ya-node190  PC1   assigned(0)  1h51m57.3s
+00000000  1593    f6606f2d  ya-node47   PC1   assigned(0)  1h51m22.1s
 `
 
 func TestWorkerJobs(t *testing.T) {

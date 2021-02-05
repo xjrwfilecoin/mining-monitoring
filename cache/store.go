@@ -143,6 +143,7 @@ func (w *WorkerInfo) updateMemory(obj interface{}) {
 
 // todo
 func (w *WorkerInfo) updateJobQueue(obj interface{}) {
+	log.Error("checkJobs: updateQueue ", obj)
 	if resMap, ok := obj.(map[string]interface{}); ok {
 		if currentQueue, ok := resMap["currentQueue"]; ok {
 			if !DeepEqual(w.CurrentQueue.Value, currentQueue) {
@@ -150,6 +151,7 @@ func (w *WorkerInfo) updateJobQueue(obj interface{}) {
 			}
 		}
 		if pendingQueue, ok := resMap["pendingQueue"]; ok {
+			log.Error("checkJobs pendingQueue:diff ", w.PendingQueue.Value, " | ", pendingQueue)
 			if !DeepEqual(w.PendingQueue.Value, pendingQueue) {
 				w.PendingQueue.Update(true, pendingQueue)
 			}
@@ -219,7 +221,7 @@ func (w *WorkerInfo) Update(obj shell.CmdData) {
 		w.updateCpuLoad(obj.Data)
 		break
 	case shell.LotusMinerJobs:
-		w.updateJobQueue(obj.Data)
+		//w.updateJobQueue(obj.Data)
 		break
 	default:
 

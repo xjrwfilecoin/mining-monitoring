@@ -9,6 +9,7 @@ import (
 	"mining-monitoring/log"
 	"mining-monitoring/utils"
 	"net/http"
+	"sync/atomic"
 )
 
 var SServer = NewServer()
@@ -21,6 +22,7 @@ func BroadCaseMsg(namespace, room, event string, obj interface{}) {
 type Server struct {
 	server    *socketio.Server
 	namespace string
+	connCount int64 // 连接总数限制
 }
 
 func (ss *Server) GetServer() *socketio.Server {
@@ -77,6 +79,22 @@ func (ss *Server) JoinRoom(namespace, room string, s socketio.Conn) {
 	ss.server.JoinRoom(namespace, room, s)
 }
 
+func (ss *Server) AddConnCount() {
+	atomic.AddInt64(&ss.connCount, 1)
+}
+
+func (ss *Server) CanConn() (int64, bool) {
+	connCount := atomic.LoadInt64(&ss.connCount)
+	if connCount < 5000 { // todo
+		return connCount, true
+	}
+	return connCount, false
+}
+
+func (ss *Server) DelConnCount() {
+	atomic.AddInt64(&ss.connCount, -1)
+}
+
 func (ss *Server) Close() error {
 	if ss.server != nil {
 		return ss.server.Close()
@@ -86,7 +104,12 @@ func (ss *Server) Close() error {
 
 func (ss *Server) Run() error {
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
-		log.Warn("socketIO client connect ", s.ID(), s.LocalAddr(), s.RemoteAddr(), )
+		connCount, ok := ss.CanConn()
+		if !ok {
+			log.Warn("server conn count is max: please wait  ", connCount)
+			return nil
+		}
+		log.Warn("socketIO client connect ", "connCount: ", connCount, s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 		s.Emit("message", "connected ")
 		return nil
 	})
@@ -94,6 +117,7 @@ func (ss *Server) Run() error {
 	ss.server.OnError(ss.namespace, func(s socketio.Conn, e error) {
 		log.Error("socketIo error ", e.Error())
 		if s != nil {
+			ss.DelConnCount()
 			log.Error("socketIo error： info: ", s.ID(), s.LocalAddr(), s.RemoteAddr())
 			s.LeaveAll()
 			err := s.Close()
@@ -108,6 +132,7 @@ func (ss *Server) Run() error {
 	ss.server.OnDisconnect(ss.namespace, func(s socketio.Conn, reason string) {
 		log.Error("socketIo client disConnect ", reason)
 		if s != nil {
+			ss.DelConnCount()
 			log.Error("socketIO client disConnect: ", s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 			s.LeaveAll()
 			err := s.Close()
@@ -133,6 +158,9 @@ func NewServer() *Server {
 
 	server, err := socketio.NewServer(
 		&engineio.Options{
+			ConnInitor: func(request *http.Request, conn engineio.Conn) {
+				log.Info("socketIO request Conn: ", request.URL.Host, conn.ID())
+			},
 			Transports: []transport.Transport{
 				&websocket.Transport{
 					CheckOrigin: func(r *http.Request) bool {
