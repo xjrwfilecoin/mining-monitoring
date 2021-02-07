@@ -45,9 +45,9 @@ func (m *Manager) Update(obj shell.CmdData) {
 		minerInfo.Update(obj)
 
 	} else if obj.CmdType == shell.LotusMinerWorkers { // workers列表
-		m.updateTaskState(obj.MinerId, obj.Data)
+		m.updateWorkerState(obj.MinerId, obj.Data)
 	} else if obj.CmdType == shell.LotusMinerJobs { //  jobs列表
-		m.updateWorkerTask(obj.MinerId, obj.Data)
+		m.updateMinerJobs(obj.MinerId, obj.Data)
 	} else if obj.State == shell.HardwareState { // 硬件信息
 		workerId := WorkerId{MinerId: MinerId(obj.MinerId), HostName: obj.HostName}
 		workerInfo, ok := m.WorkerInfoTable[workerId]
@@ -59,7 +59,10 @@ func (m *Manager) Update(obj shell.CmdData) {
 	}
 }
 
-func (m *Manager) updateWorkerTask(minerId string, obj interface{}) {
+
+
+
+func (m *Manager) updateMinerJobs(minerId string, obj interface{}) {
 	log.Error("checkJobs: rec ", obj)
 	if jobsMap, ok := obj.([]map[string]interface{}); ok {
 		mapByHost := mapByHost(jobsMap)
@@ -69,26 +72,23 @@ func (m *Manager) updateWorkerTask(minerId string, obj interface{}) {
 		for hostName, taskQueue := range mapByType {
 			workerId := WorkerId{MinerId: MinerId(minerId), HostName: hostName}
 			workerInfo, ok := m.WorkerInfoTable[workerId]
-			if !ok {
-				workerInfo = NewWorkerInfo(hostName)
-				m.WorkerInfoTable[workerId] = workerInfo
+			if ok {
+				workerInfo.updateJobQueue(taskQueue)
 			}
 			log.Error("checkJobs: taskQueue: ", workerId, taskQueue)
-			workerInfo.updateJobQueue(taskQueue)
 		}
 	}
 }
 
-// todo
-func (m *Manager) updateTaskState(minerId string, obj interface{}) {
+func (m *Manager) updateWorkerState(minerId string, obj interface{}) {
 	log.Debug("workers: ", obj)
 	if workerList, ok := obj.([]map[string]interface{}); ok {
 		for i := 0; i < len(workerList); i++ {
 			worker := workerList[i]
-			log.Debug("workers detail: ", worker)
+			log.Warn("workers detail: ", worker)
 			if hostName, ok := worker["hostName"]; ok {
 				if host, ok := hostName.(string); ok {
-					log.Debug("workers host", host)
+					log.Warn("workers host", host)
 					workerId := WorkerId{MinerId: MinerId(minerId), HostName: host}
 					workerInfo, ok := m.WorkerInfoTable[workerId]
 					if !ok {
@@ -97,6 +97,22 @@ func (m *Manager) updateTaskState(minerId string, obj interface{}) {
 					}
 					workerInfo.UpdateTaskType(worker)
 				}
+			}
+		}
+		// todo
+		// 清除不存在的worker
+		for workerId, _ := range m.WorkerInfoTable {
+			contain := false
+			for i := 0; i < len(workerList); i++ {
+				worker := workerList[i]
+				if hostName, ok := worker["hostName"]; ok {
+					if workerId.HostName == hostName {
+						contain = true
+					}
+				}
+			}
+			if !contain {
+				delete(m.WorkerInfoTable, workerId)
 			}
 		}
 	}

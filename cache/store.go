@@ -45,7 +45,6 @@ type WorkerInfo struct {
 	TaskType  Value `json:"taskType"`
 }
 
-
 func NewWorkerInfo(hostName string) *WorkerInfo {
 	return &WorkerInfo{
 		HostName:     Value{Value: hostName},
@@ -142,6 +141,7 @@ func (w *WorkerInfo) updateMemory(obj interface{}) {
 	}
 }
 
+
 // todo
 func (w *WorkerInfo) updateJobQueue(obj interface{}) {
 	log.Error("checkJobs: updateQueue ", obj)
@@ -236,17 +236,29 @@ func (w WorkerInfo) GetDiff(all bool) map[string]interface{} {
 	for i := 0; i < vw.NumField(); i++ {
 		f := vw.Field(i)
 		value := f.FieldByName("Value").Interface()
-		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag && value != nil || all {
+		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag || all {
 			keyName := tw.Field(i).Name
 			if len(keyName) < 2 {
 				continue
 			}
 			newKey := fmt.Sprintf("%v%v", strings.ToLower(keyName[0:1]), keyName[1:])
+			if value == nil {
+				if FieldIsArray(newKey) {
+					value = []interface{}{}
+				} else {
+					value = ""
+				}
+			}
 			param[newKey] = value
 		}
-
 	}
 	return param
+}
+
+// 这些字段返回array
+func FieldIsArray(keyName string) bool {
+	return keyName == "netIO" || keyName == "gpuInfo" ||
+		keyName == "taskType" || keyName == "pendingQueue" || keyName == "currentQueue"
 }
 
 type MinerInfo struct {

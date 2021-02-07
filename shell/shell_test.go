@@ -441,6 +441,16 @@ func TestParseMinerInfo(t *testing.T) {
 
 var testStr = `{"deletedSectors":"1","effectivePower":"0","effectiveSectors":"0","errorSectors":"0","failSectors":"0","hardwareInfo":{"worker01":{"cpuLoad":"14.73","cpuTemper":"+41.1°C","diskR":"906.67M/s","diskW":"163.63M/s","gpuInfo":{"0":{"name":"0","temp":"91C","use":"100%"}},"hostName":"worker01","netIO":{"eno1":{"name":"eno1","rx":"1.27","tx":"2.90"},"eno2":{"name":"eno2","rx":"0.00","tx":"0.00"},"enp2s0f0np0":{"name":"enp2s0f0np0","rx":"0.00","tx":"0.00"},"enp2s0f1np1":{"name":"enp2s0f1np1","rx":"0.00","tx":"0.00"},"lo":{"name":"lo","rx":"0.00","tx":"0.00"}},"totalMemory":"503G","useDisk":"40%","useMemory":"319G"}},"jobs":{"17":{"hostName":"worker01","id":"d7fd42c9","sector":"17","state":"running","task":"PC1","time":"17m48s","worker":"98c441ab"},"40":{"hostName":"worker01","id":"f5d60859","sector":"40","state":"running","task":"PC2","time":"20m17.7s","worker":"98c441ab"},"47":{"hostName":"worker01","id":"4fda8ea1","sector":"47","state":"running","task":"PC1","time":"13m17.7s","worker":"98c441ab"},"48":{"hostName":"worker01","id":"eba6ef90","sector":"48","state":"running","task":"PC1","time":"16m17.9s","worker":"98c441ab"},"49":{"hostName":"worker01","id":"d3283f2f","sector":"49","state":"running","task":"PC1","time":"19m18s","worker":"98c441ab"},"50":{"hostName":"worker01","id":"c1309585","sector":"50","state":"running","task":"PC1","time":"14m48s","worker":"98c441ab"},"51":{"hostName":"worker01","id":"53185af0","sector":"51","state":"running","task":"PC1","time":"11m47s","worker":"98c441ab"}},"messageNums":9,"minerBalance":"0","minerId":"t0114613","pledgeBalance":"0","postBalance":"0","recoverySectors":"0","timestamp":1610171829,"totalSectors":"52","workerBalance":"39.522FIL"}`
 
+
+
+var minerWorkers01 =`
+Worker 36ccea46-193c-4ba0-bced-c88dab14d529, host ya-node165-miner
+        CPU:  [                                                                ] 0/64 core(s) in use
+        RAM:  [                                                                ] 1% 4.802 GiB/409.1 GiB
+        VMEM: [                                                                ] 1% 4.802 GiB/409.1 GiB
+        GPU: GeForce RTX 2080 Ti, not used
+        GPU: GeForce RTX 2080 Ti, not used`
+
 var minerWorkers = `
 Worker 0042426f-fcb5-4872-a6e5-58108b61ea8b, host ya-node111 (disabled) tasks AP|C1|PC1|PC2-0
         CPU:  [|||||                                                           ] 4/48 core(s) in use
@@ -455,7 +465,7 @@ Worker 0cb8f1a3-ed67-4b0b-86fd-a5535b3ae9fe, host ya-node102 (disabled) tasks AP
 Worker 44fdd58f-0c5d-4a99-9d9b-69e2537029c5, host ya-node98-miner tasks RD
         CPU:  [                                                                ] 0/48 core(s) in use
         RAM:  [||||||                                                          ] 9% 37.66 GiB/377.6 GiB
-        VMEM: [||||||                                                          ] 9% 37.66 GiB/379.6 GiB
+        VMEM: [||||||                                                          ] 9% 37.66 GiB/379.6 GiB 
         GPU: GeForce RTX 2080 Ti, not used
 Worker 48d674a7-62a2-4044-b7e5-0b8f4195ebc7, host ya-node87 (disabled) tasks C2
         CPU:  [                                                                ] 0/32 core(s) in use
@@ -490,10 +500,9 @@ func TestMinerWorkers(t *testing.T) {
 				taskState = TaskDisabled
 			}
 			line = strings.ReplaceAll(line, "(disabled)", "")
-			fmt.Println(line)
 			fields := strings.Fields(line)
-			fmt.Println(len(fields))
-			if len(fields) < 6 {
+			fmt.Println(line,fields,len(fields))
+			if len(fields) < 5 {
 				continue
 			}
 			preHostName = fields[3]

@@ -35,7 +35,7 @@ var CommittingReg = regexp.MustCompile(`Committing:[\s]+([\d]*)`)
 var FinalizeSectorReg = regexp.MustCompile(`FinalizeSector:[\s]+([\d]*)`)
 
 // post
-var postBalanceTestReg = regexp.MustCompile(`control.*post.*([\d]+\.[\d]*.*FIL)`)
+var postBalanceTestReg = regexp.MustCompile(`control.*post.*m([\d]+\.[\d]*.*FIL)`)
 
 // hardware info
 var cpuTemperatureRTdieReg = regexp.MustCompile(`Tdie:[\s]*(.*[\d]*.*[\d]*.*C) `)
