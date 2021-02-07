@@ -18,6 +18,26 @@ func (v *Value) Update(flag bool, value interface{}) {
 	v.Flag = flag
 }
 
+// 任务类型， 任务列表
+type Queue map[string][]map[string]interface{}
+
+func (q Queue) update(job map[string]interface{}) {
+	taskType, ok := job["task"]
+	if !ok {
+		return
+	}
+	tType, ok := taskType.(string)
+	if !ok {
+		return
+	}
+	if task, ok := q[tType]; ok {
+		q[tType] = append(task, job)
+	} else {
+		q[tType] = []map[string]interface{}{job}
+	}
+
+}
+
 type WorkerId struct {
 	MinerId  MinerId
 	HostName string
@@ -48,8 +68,8 @@ type WorkerInfo struct {
 func NewWorkerInfo(hostName string) *WorkerInfo {
 	return &WorkerInfo{
 		HostName:     Value{Value: hostName},
-		CurrentQueue: Value{},
-		PendingQueue: Value{},
+		CurrentQueue: Value{Value: Queue{}},
+		PendingQueue: Value{Value: Queue{}},
 		CpuTemper:    Value{},
 		CpuLoad:      Value{},
 		GpuInfo:      Value{},
@@ -141,6 +161,28 @@ func (w *WorkerInfo) updateMemory(obj interface{}) {
 	}
 }
 
+func (w *WorkerInfo) clearQueue() {
+	w.CurrentQueue.Value = Value{Value: Queue{}}
+	w.PendingQueue.Value = Value{Value: Queue{}}
+}
+
+func (w *WorkerInfo) updateMinerJob(job map[string]interface{}) {
+	state, ok := job["state"]
+	if !ok {
+		return
+	}
+	if state == "running" {
+		if currentQueue, ok := w.CurrentQueue.Value.(Queue); ok {
+			currentQueue.update(job)
+			w.CurrentQueue.Value = currentQueue
+		}
+	} else {
+		if pendingQueue, ok := w.PendingQueue.Value.(Queue); ok {
+			pendingQueue.update(job)
+			w.PendingQueue.Value = pendingQueue
+		}
+	}
+}
 
 // todo
 func (w *WorkerInfo) updateJobQueue(obj interface{}) {
@@ -243,11 +285,7 @@ func (w WorkerInfo) GetDiff(all bool) map[string]interface{} {
 			}
 			newKey := fmt.Sprintf("%v%v", strings.ToLower(keyName[0:1]), keyName[1:])
 			if value == nil {
-				if FieldIsArray(newKey) {
-					value = []interface{}{}
-				} else {
-					value = ""
-				}
+				value = getDefaultValue(newKey)
 			}
 			param[newKey] = value
 		}
@@ -256,9 +294,23 @@ func (w WorkerInfo) GetDiff(all bool) map[string]interface{} {
 }
 
 // 这些字段返回array
-func FieldIsArray(keyName string) bool {
-	return keyName == "netIO" || keyName == "gpuInfo" ||
-		keyName == "taskType" || keyName == "pendingQueue" || keyName == "currentQueue"
+func getDefaultValue(keyName string) interface{} {
+	var result interface{}
+	switch keyName {
+	case "netIO":
+		result = []interface{}{}
+		break
+	case "gpuInfo":
+		result = []interface{}{}
+		break
+	case "taskType":
+		result = []interface{}{}
+		break
+	default:
+		result = ""
+	}
+	return result
+
 }
 
 type MinerInfo struct {

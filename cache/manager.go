@@ -59,8 +59,27 @@ func (m *Manager) Update(obj shell.CmdData) {
 	}
 }
 
-
-
+func (m *Manager) updateMinerJobsV1(minerId string, obj interface{}) {
+	log.Error("checkJobs: rec ", obj)
+	for _, workerInfo := range m.WorkerInfoTable {
+		workerInfo.clearQueue()
+	}
+	if jobsMap, ok := obj.([]map[string]interface{}); ok {
+		for i := 0; i < len(jobsMap); i++ {
+			job := jobsMap[i]
+			if hostName, ok := job["hostName"]; ok {
+				if host, ok := hostName.(string); ok {
+					workerId := WorkerId{MinerId: MinerId(minerId), HostName: host}
+					workerInfo, ok := m.WorkerInfoTable[workerId]
+					if ok {
+						workerInfo.updateMinerJob(job)
+					}
+					log.Error("checkJobs: taskQueue: ", workerId, job)
+				}
+			}
+		}
+	}
+}
 
 func (m *Manager) updateMinerJobs(minerId string, obj interface{}) {
 	log.Error("checkJobs: rec ", obj)
@@ -108,6 +127,7 @@ func (m *Manager) updateWorkerState(minerId string, obj interface{}) {
 				if hostName, ok := worker["hostName"]; ok {
 					if workerId.HostName == hostName {
 						contain = true
+						break
 					}
 				}
 			}
