@@ -1,5 +1,20 @@
 {
   "LogPath": "./log/",
   "HTTPListen": "0.0.0.0:9898",
-  "Debug": false
+  "Debug": false,
+  "LogLevel": "ERROR",
+  "HardWardSample": {
+    "Interval": 120,
+    "Timeout": 60
+  },
+  "MinerInfo": {
+    "Interval": 120,
+    "Timeout": 60
+  },
+  "MiningInfo": {
+    "Interval": 120,
+    "Timeout": 60
+  },
+  "CmdConcurrentMaxNum": 100,
+  "ConnMaxNum": 1000
 }

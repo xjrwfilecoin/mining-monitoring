@@ -47,7 +47,7 @@ func (m *Manager) Update(obj shell.CmdData) {
 	} else if obj.CmdType == shell.LotusMinerWorkers { // workers列表
 		m.updateWorkerState(obj.MinerId, obj.Data)
 	} else if obj.CmdType == shell.LotusMinerJobs { //  jobs列表
-		m.updateMinerJobs(obj.MinerId, obj.Data)
+		m.updateMinerJobsV1(obj.MinerId, obj.Data)
 	} else if obj.State == shell.HardwareState { // 硬件信息
 		workerId := WorkerId{MinerId: MinerId(obj.MinerId), HostName: obj.HostName}
 		workerInfo, ok := m.WorkerInfoTable[workerId]
@@ -60,7 +60,7 @@ func (m *Manager) Update(obj shell.CmdData) {
 }
 
 func (m *Manager) updateMinerJobsV1(minerId string, obj interface{}) {
-	log.Error("checkJobs: rec ", obj)
+	log.Error("checkjobs: rec ", obj)
 	for _, workerInfo := range m.WorkerInfoTable {
 		workerInfo.clearQueue()
 	}
@@ -74,7 +74,7 @@ func (m *Manager) updateMinerJobsV1(minerId string, obj interface{}) {
 					if ok {
 						workerInfo.updateMinerJob(job)
 					}
-					log.Error("checkJobs: taskQueue: ", workerId, job)
+					log.Error("checkJobs: ls: ", workerId, job)
 				}
 			}
 		}

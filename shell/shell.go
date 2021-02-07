@@ -159,6 +159,9 @@ func (sp *Parse) PingWorkersV1() {
 		res = append(res, utils.StructToMapByJson(worker))
 	}
 	log.Warn("workers recv: ", res)
+	//res = append(res, utils.StructToMapByJson(&WorkerInfo{HostName: "test01", NetState: NetNormal, TaskState: Normal}))
+	//res = append(res, utils.StructToMapByJson(&WorkerInfo{HostName: "test02", NetState: NetNormal, TaskState: TaskDisabled}))
+	//res = append(res, utils.StructToMapByJson(&WorkerInfo{HostName: "test03", NetState: NetDisabled, TaskState: TaskDisabled}))
 	sp.cmdSign <- NewCmdData(sp.Miners.MinerId, sp.Miners.MinerId, LotusMinerWorkers, LotusState, res)
 }
 
@@ -178,6 +181,36 @@ func (sp *Parse) getWorkerList() error {
 	}
 	sp.PingWorkersV1()
 	return nil
+}
+
+func (sp *Parse) mockTest() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			var res []map[string]interface{}
+			for i := 0; i < 10; i++ {
+				task := "PC1"
+				if i%2 == 0 {
+					task = "PC2"
+				}
+				hostName := fmt.Sprintf("test0%v", i)
+				param := Task{
+					Id:       hostName,
+					Sector:   hostName,
+					Worker:   hostName,
+					HostName: hostName,
+					Task:     task,
+					State:    "running",
+				}
+				res = append(res, utils.StructToMapByJson(param))
+			}
+			sp.cmdSign <- NewCmdData(sp.HostName, sp.Miners.MinerId, LotusMinerJobs, LotusState, res)
+		case <-sp.closing:
+			return
+		}
+	}
 }
 
 func (sp *Parse) ContainWorkers(jobWorkers map[string]interface{}) {
@@ -295,6 +328,7 @@ func (sp *Parse) Send() {
 	//go sp.doHardWareInfo()
 	go sp.doHardwareInfoV1()
 	//go sp.getMinerHardwareInfo()
+	//go sp.mockTest()
 
 }
 
@@ -361,7 +395,7 @@ func (sp *Parse) InitMinerInfo() error {
 }
 
 func (sp *Parse) miningInfo() {
-	ticker := time.NewTicker(180 * time.Second)
+	ticker := time.NewTicker(150 * time.Second)
 	cmdList := sp.getMinerCmdList(sp.Miners.MinerId)
 	defer ticker.Stop()
 	for {

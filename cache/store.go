@@ -58,8 +58,8 @@ type WorkerInfo struct {
 	DiskR        Value `json:"diskR"`
 	DiskW        Value `json:"diskW"`
 	NetIO        Value `json:"netIO"`
-
-	NetState Value `json:"netState"` // ping心跳
+	Del          Value `json:"del"`      //已经删除了
+	NetState     Value `json:"netState"` // ping心跳
 
 	TaskState Value `json:"taskState"` // lotus-miner sealing  workers
 	TaskType  Value `json:"taskType"`
@@ -162,11 +162,12 @@ func (w *WorkerInfo) updateMemory(obj interface{}) {
 }
 
 func (w *WorkerInfo) clearQueue() {
-	w.CurrentQueue.Value = Value{Value: Queue{}}
-	w.PendingQueue.Value = Value{Value: Queue{}}
+	w.CurrentQueue.Value = Queue{}
+	w.PendingQueue.Value = Queue{}
 }
 
 func (w *WorkerInfo) updateMinerJob(job map[string]interface{}) {
+	log.Error("jobs: ", job)
 	state, ok := job["state"]
 	if !ok {
 		return
@@ -174,11 +175,13 @@ func (w *WorkerInfo) updateMinerJob(job map[string]interface{}) {
 	if state == "running" {
 		if currentQueue, ok := w.CurrentQueue.Value.(Queue); ok {
 			currentQueue.update(job)
+			w.CurrentQueue.Flag = true
 			w.CurrentQueue.Value = currentQueue
 		}
 	} else {
 		if pendingQueue, ok := w.PendingQueue.Value.(Queue); ok {
 			pendingQueue.update(job)
+			w.PendingQueue.Flag = true
 			w.PendingQueue.Value = pendingQueue
 		}
 	}
@@ -278,7 +281,7 @@ func (w WorkerInfo) GetDiff(all bool) map[string]interface{} {
 	for i := 0; i < vw.NumField(); i++ {
 		f := vw.Field(i)
 		value := f.FieldByName("Value").Interface()
-		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag || all {
+		if flag, ok := f.FieldByName("Flag").Interface().(bool); ok && flag && value != nil || all {
 			keyName := tw.Field(i).Name
 			if len(keyName) < 2 {
 				continue
@@ -307,7 +310,7 @@ func getDefaultValue(keyName string) interface{} {
 		result = []interface{}{}
 		break
 	default:
-		result = ""
+		result = "0"
 	}
 	return result
 
