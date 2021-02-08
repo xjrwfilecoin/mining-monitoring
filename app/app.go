@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	cache "mining-monitoring/cache"
 	"mining-monitoring/config"
 	"mining-monitoring/log"
-	cache "mining-monitoring/cache"
 	"mining-monitoring/model"
 	httpsvr "mining-monitoring/net/http"
 	"mining-monitoring/net/socket"
@@ -16,6 +16,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 	"time"
 )
@@ -24,16 +25,21 @@ var ShellManager *shell.Manager
 
 func Run(cfgPath string) error {
 
-	// just test
+	// todo just test
 	go func() {
 		http.ListenAndServe(":6060", nil)
 	}()
 
-	runtimeConfig, err := ReadCfg(cfgPath)
+	runtimeCfg, err := ReadCfg(cfgPath)
 	if err != nil {
 		return err
 	}
-	_, err = log.MyLogicLogger(runtimeConfig.LogPath)
+
+	if runtimeCfg.CpuNum != 0 {
+		runtime.GOMAXPROCS(int(runtimeCfg.CpuNum))
+	}
+
+	_, err = log.MyLogicLogger(runtimeCfg.LogPath, runtimeCfg.LogLevel)
 	if err != nil {
 		return err
 	}
@@ -76,13 +82,14 @@ func Run(cfgPath string) error {
 	}()
 	defer socket.SServer.Close()
 	go func() {
-		err := socket.SServer.Run()
+		option := socket.Option{ConnMaxNum: runtimeCfg.ConnMaxNum}
+		err := socket.SServer.Run(option)
 		if err != nil {
 			panic(err)
 		}
 	}()
 
-	httpsvr.ListenAndServe(runtimeConfig, socket.SServer)
+	httpsvr.ListenAndServe(runtimeCfg, socket.SServer)
 	return nil
 }
 

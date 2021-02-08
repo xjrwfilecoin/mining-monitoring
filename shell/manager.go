@@ -1,9 +1,5 @@
 package shell
 
-import (
-	"mining-monitoring/log"
-)
-
 type Manager struct {
 	shellParse *Parse
 }
@@ -21,10 +17,6 @@ func (m *Manager) Close() {
 }
 
 func NewManager() (*Manager, error) {
-	_, err := log.MyLogicLogger("./log")
-	if err != nil {
-		return nil, err
-	}
 	return &Manager{
 		shellParse: NewShellParse(),
 	}, nil

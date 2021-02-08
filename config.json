@@ -1,17 +1,18 @@
 {
   "LogPath": "./log/",
+  "CpuNum": 4,
   "HTTPListen": "0.0.0.0:9898",
   "Debug": false,
   "LogLevel": "ERROR",
-  "HardWardSample": {
+  "HardWardSampleTime": {
     "Interval": 120,
     "Timeout": 60
   },
-  "MinerInfo": {
+  "MinerInfoTime": {
     "Interval": 120,
     "Timeout": 60
   },
-  "MiningInfo": {
+  "MiningInfoTime": {
     "Interval": 120,
     "Timeout": 60
   },

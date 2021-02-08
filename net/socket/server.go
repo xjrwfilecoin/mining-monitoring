@@ -20,9 +20,9 @@ func BroadCaseMsg(namespace, room, event string, obj interface{}) {
 }
 
 type Server struct {
-	server    *socketio.Server
-	namespace string
-	connCount int64 // 连接总数限制
+	server     *socketio.Server
+	namespace  string
+	connMaxNum int64 // 连接总数限制
 }
 
 func (ss *Server) GetServer() *socketio.Server {
@@ -80,11 +80,11 @@ func (ss *Server) JoinRoom(namespace, room string, s socketio.Conn) {
 }
 
 func (ss *Server) AddConnCount() {
-	atomic.AddInt64(&ss.connCount, 1)
+	atomic.AddInt64(&ss.connMaxNum, 1)
 }
 
 func (ss *Server) CanConn() (int64, bool) {
-	connCount := atomic.LoadInt64(&ss.connCount)
+	connCount := atomic.LoadInt64(&ss.connMaxNum)
 	if connCount < 3000 { // todo
 		return connCount, true
 	}
@@ -92,7 +92,7 @@ func (ss *Server) CanConn() (int64, bool) {
 }
 
 func (ss *Server) DelConnCount() {
-	atomic.AddInt64(&ss.connCount, -1)
+	atomic.AddInt64(&ss.connMaxNum, -1)
 }
 
 func (ss *Server) Close() error {
@@ -102,7 +102,12 @@ func (ss *Server) Close() error {
 	return nil
 }
 
-func (ss *Server) Run() error {
+func (ss *Server) Run(option Option) error {
+	if option.ConnMaxNum != 0 {
+		ss.connMaxNum = option.ConnMaxNum
+	} else {
+		ss.connMaxNum = DefaultConnMaxNum
+	}
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
 		connCount, ok := ss.CanConn()
 		if !ok {
@@ -110,7 +115,7 @@ func (ss *Server) Run() error {
 			return nil
 		}
 		ss.AddConnCount()
-		log.Warn("socketIO client connect ", "connCount: ", connCount, s.ID(), s.LocalAddr(), s.RemoteAddr(), )
+		log.Warn("socketIO client connect ", "connMaxNum: ", connCount, s.ID(), s.LocalAddr(), s.RemoteAddr(), )
 		s.Emit("message", "connected ")
 		return nil
 	})

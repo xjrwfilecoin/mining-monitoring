@@ -68,34 +68,52 @@ func MyGinLogger(logPath string) gin.HandlerFunc {
 var Logger *logrus.Logger
 
 //MyLogicLogger 自定义logrus日志
-func MyLogicLogger(logPath string) (*logrus.Logger, error) {
+func MyLogicLogger(logPath, logLevel string) (*logrus.Logger, error) {
 	if logPath == "" {
 		logPath = "./"
 	}
 	logFilePath := logPath
 	logFileName := "logic.log"
 	fileName := path.Join(logFilePath, logFileName)
-	fileSrc, err := os.OpenFile(os.DevNull, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
-	if err != nil {
-		return nil, err
-	}
+	//fileSrc, err := os.OpenFile(os.DevNull, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	//if err != nil {
+	//	return nil, err
+	//}
 	writers := []io.Writer{
-		fileSrc,
+		//fileSrc,
 		os.Stdout,
 	}
 	logger := logrus.New()
 	logger.Out = io.MultiWriter(writers...)
-	logger.SetLevel(logrus.DebugLevel)
+	switch logLevel {
+	case "DEBUG":
+		logger.SetLevel(logrus.DebugLevel)
+		break
+	case "INFO":
+		logger.SetLevel(logrus.InfoLevel)
+		break
+	case "WARN":
+		logger.SetLevel(logrus.WarnLevel)
+		break
+	case "ERROR":
+		logger.SetLevel(logrus.ErrorLevel)
+		break
+	default:
+		logger.SetLevel(logrus.WarnLevel)
+
+	}
 	logWriter, err := rotatelogs.New(
 		fileName+".%Y%m%d.log",
 		//rotatelogs.WithLinkName(fileName),
 		rotatelogs.WithMaxAge(7*24*time.Hour),
 		rotatelogs.WithRotationTime(24*time.Hour),
 	)
+	if err != nil {
+		return nil, err
+	}
 	logger.Formatter = &logrus.TextFormatter{
 		ForceColors: true,
 	}
-
 	// then wrap the log output with it
 	writeMap := lfshook.WriterMap{
 		logrus.InfoLevel:  logWriter,
@@ -131,13 +149,11 @@ func Warn(msg ...interface{}) {
 	if Logger != nil {
 		Logger.Warnln(msg)
 
-
 	}
 }
 func Error(msg ...interface{}) {
 	if Logger != nil {
 		Logger.Errorln(msg)
-
 
 	}
 }

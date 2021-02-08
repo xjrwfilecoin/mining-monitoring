@@ -1,0 +1,28 @@
+{
+  "LogPath": "./log/",
+  "CpuNum": 4,
+  "HTTPListen": "0.0.0.0:9898",
+  "Debug": false,
+  "LogLevel": "ERROR",
+  "ConnMaxNum": 1000,
+  "MinerConfigs": [
+    {
+      "MinerId": "f01000",
+      "APIUrl": "",
+      "APIToken": "",
+      "HardWardSampleTime": {
+        "Interval": 120,
+        "Timeout": 60
+      },
+      "MinerInfoTime": {
+        "Interval": 120,
+        "Timeout": 60
+      },
+      "MiningInfoTime": {
+        "Interval": 120,
+        "Timeout": 60
+      },
+      "CmdConcurrentMaxNum": 100
+    }
+  ]
+}
