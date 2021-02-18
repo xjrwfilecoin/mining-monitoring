@@ -7,9 +7,7 @@
   "ConnMaxNum": 1000,
   "MinerConfigs": [
     {
-      "MinerId": "f01000",
-      "APIUrl": "",
-      "APIToken": "",
+      "MinerIp": "127.0.0.1",
       "HardWardSampleTime": {
         "Interval": 120,
         "Timeout": 60

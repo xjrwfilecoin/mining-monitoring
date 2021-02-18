@@ -16,7 +16,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 )
@@ -35,9 +34,9 @@ func Run(cfgPath string) error {
 		return err
 	}
 
-	if runtimeCfg.CpuNum != 0 {
-		runtime.GOMAXPROCS(int(runtimeCfg.CpuNum))
-	}
+	//if runtimeCfg.CpuNum != 0 {
+	//	runtime.GOMAXPROCS(int(runtimeCfg.CpuNum))
+	//}
 
 	_, err = log.MyLogicLogger(runtimeCfg.LogPath, runtimeCfg.LogLevel)
 	if err != nil {
