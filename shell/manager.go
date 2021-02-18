@@ -1,5 +1,7 @@
 package shell
 
+import "mining-monitoring/model"
+
 type Manager struct {
 	shellParse *Parse
 }
@@ -16,8 +18,8 @@ func (m *Manager) Close() {
 	m.shellParse.Close()
 }
 
-func NewManager() (*Manager, error) {
+func NewManager(minerConfigs []model.MinerConfig) (*Manager, error) {
 	return &Manager{
-		shellParse: NewShellParse(),
+		shellParse: NewShellParse(minerConfigs),
 	}, nil
 }

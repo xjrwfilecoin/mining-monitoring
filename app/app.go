@@ -33,23 +33,24 @@ func Run(cfgPath string) error {
 	if err != nil {
 		return err
 	}
-
-	//if runtimeCfg.CpuNum != 0 {
-	//	runtime.GOMAXPROCS(int(runtimeCfg.CpuNum))
-	//}
-
+	if err := runtimeCfg.Check(); err != nil {
+		return err
+	}
 	_, err = log.MyLogicLogger(runtimeCfg.LogPath, runtimeCfg.LogLevel)
 	if err != nil {
 		return err
 	}
-	ShellManager, err = shell.NewManager()
+
+	ShellManager, err = shell.NewManager(runtimeCfg.MinerConfigs)
 	if err != nil {
 		return fmt.Errorf("init shell shellManager %v \n", err)
 	}
 	defer ShellManager.Close()
+
 	sign := make(chan shell.CmdData, 100)
 	manager := cache.NewManager()
 	defer manager.Close()
+
 	for i := 0; i < 100; i++ {
 		go manager.Rec(sign)
 	}

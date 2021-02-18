@@ -1,5 +1,5 @@
 package socket
 
 type Option struct {
-	ConnMaxNum uint64
+	ConnMaxNum int64
 }

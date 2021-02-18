@@ -9,18 +9,18 @@
     {
       "MinerIp": "127.0.0.1",
       "HardWardSampleTime": {
-        "Interval": 120,
-        "Timeout": 60
+        "Interval": 45,
+        "Timeout": 15
       },
       "MinerInfoTime": {
-        "Interval": 120,
+        "Interval": 60,
         "Timeout": 60
       },
       "MiningInfoTime": {
-        "Interval": 120,
-        "Timeout": 60
+        "Interval": 45,
+        "Timeout": 45
       },
-      "CmdConcurrentMaxNum": 100
+      "CmdConcurrentMaxNum": 400
     }
   ]
 }

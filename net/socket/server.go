@@ -103,11 +103,7 @@ func (ss *Server) Close() error {
 }
 
 func (ss *Server) Run(option Option) error {
-	if option.ConnMaxNum != 0 {
-		ss.connMaxNum = option.ConnMaxNum
-	} else {
-		ss.connMaxNum = DefaultConnMaxNum
-	}
+	ss.connMaxNum = option.ConnMaxNum
 	ss.server.OnConnect(ss.namespace, func(s socketio.Conn) error {
 		connCount, ok := ss.CanConn()
 		if !ok {
@@ -152,16 +148,7 @@ func (ss *Server) Run(option Option) error {
 
 }
 
-type GenId struct {
-}
-
-func (g GenId) NewID() string {
-
-	return utils.GetUUID()
-}
-
 func NewServer() *Server {
-
 	server, err := socketio.NewServer(
 		&engineio.Options{
 			ConnInitor: func(request *http.Request, conn engineio.Conn) {

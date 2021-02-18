@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"mining-monitoring/log"
+	"mining-monitoring/model"
 	"mining-monitoring/utils"
 	"os/exec"
 	"strings"
@@ -27,10 +28,11 @@ type Parse struct {
 	CmdMap       map[CmdType]ShellCmd
 	workerSign   chan Worker
 	sync.Mutex
-	cmdCount int64 //任务总数控制
+	cmdCount    int64 //任务总数控制
+	MinerConfig []model.MinerConfig
 }
 
-func NewShellParse() *Parse {
+func NewShellParse(minerConfigs []model.MinerConfig) *Parse {
 	return &Parse{
 		cmdSign:      make(chan CmdData, 150),
 		CmdParseMap:  make(map[CmdType]func(cmd ShellCmd, input string) CmdData),
@@ -38,6 +40,7 @@ func NewShellParse() *Parse {
 		CmdMap:       make(map[CmdType]ShellCmd),
 		workerSign:   make(chan Worker, 1),
 		cmdHeartTime: 10,
+		MinerConfig:  minerConfigs,
 	}
 }
 
@@ -354,6 +357,17 @@ func (sp *Parse) getMinerHardwareInfo() {
 			return
 
 		}
+	}
+}
+
+func (sp *Parse) CheckEnvAndInit() error {
+	for i := 0; i < len(sp.MinerConfig); i++ {
+		minerConfig := sp.MinerConfig[i]
+		ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+		cmd := NewLotusShellCmd(minerConfig.MinerIp, "lotus-miner", LotusMinerInfoCmd, []string{"info"})
+		sp.execShellCmd(ctx, cmd, func(input string) {
+
+		})
 	}
 }
 
